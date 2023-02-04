@@ -1,3 +1,9 @@
+import numpy as np
+import random as random
+#using simpleguitk for display, is not needed for computer game
+import simpleguitk as simplegui
+import time
+
 #cards of the game
 class Card:
     #initiate cards
@@ -756,4 +762,34 @@ def skyjo_game(names,nature,levels,pause,silent=True,output=False):
                 return final, winner, van_count
             else:
                 #no numeric, output just winner
-                return winner        
+                return winner 
+            
+#function which dtermines who storts
+#parameters: whether is first round of game, player_list, which player ended the last round, 
+#,silent whether the result is printed on screen
+def who_starts(first,players,last_ender,silent=True):
+    #if first round of a game, player with largest sum of open values starts
+    if first==True:
+        #counter list for all players
+        counters=[]
+        for i in range(len(players)):
+            #counting for each player
+            counter=0
+            #get all open cards #get there indixes
+            open_cards=players[i].get_all_open(silent=True)
+            for j in range(len(open_cards)):
+                #get values of these cards
+                counter+=players[i].list_cards[open_cards[j]].number
+            counters.append(counter)            
+        #get maximum
+        maxc=max(counters)
+        #get index of it, not important whoch chossen when there are several
+        starter=players[counters.index(maxc)]
+        if silent==False:
+            print("Player "+str(starter.name)+" starts")        
+        return starter 
+    #otherwise the ender of the previous round starts
+    else:
+        if silent==False:
+            print("Player "+str(last_ender.name)+" starts") 
+        return last_ender                                
