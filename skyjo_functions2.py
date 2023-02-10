@@ -851,3 +851,33 @@ def skyjo_game(names,nature,levels,pause,silent=True,output=False):
             else:
                 #no numeric, output just winner
                 return winner
+
+def allowed_modes(names,nature,levels):
+    #list of allowed computer level, no humman currently implemented
+    comp_level_list = [0,-1,-2,-3]
+    #default is true
+    allowed=True
+    #between 2 and 8 players and input lists of same length
+    if len(names)<2 or len(names)>8 or len(names)!=len(nature) or len(names)!=len(levels):
+        allowed=False
+    else:
+        for i in range(len(names)):
+            #for computer
+            if nature[i]=='computer' and any(levels[i] in comp_level_list for item in comp_level_list)==False:
+                allowed=False
+            #human is not implemented and will have different levels    
+            #for now because human not implemented    
+            if nature[i]!='computer':
+                allowed=False
+    return allowed          
+
+#parameters index of acting player of a turn, and the result of the players (some kind of score)
+def reorder_players(player,result):
+    xx=len(result)
+    array=np.zeros((xx))    
+    #acting players
+    array[0]=result[int(player)]
+    for j in range(1,xx):
+        #get scores of following players
+        array[j]=result[int((j+player)%xx)] 
+    return array  
