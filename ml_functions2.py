@@ -7,6 +7,7 @@ import pandas as pd
 #using simpleguitk for display, is not needed for computer game
 #likely not needed un this notebook 
 import simpleguitk as simplegui
+from xgboost import XGBRegressor
 
 #other function needed for it 
 from skyjo_functions2 import *
