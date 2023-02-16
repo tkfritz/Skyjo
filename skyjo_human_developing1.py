@@ -449,6 +449,9 @@ def actions(player,players,pile,discarded,take_open, discard,silent=True,simulat
                 #for simulated this one currently one implemented    
                 if player.level==1 and simulated==True:
                     selected=existing.copy()
+                #for human    
+            if player.level==1 and player.mode=='human':
+                    selected=[card]    
             #get selected cards
             for i in range(len(selected)):
                 if simulated==False:
@@ -502,7 +505,10 @@ def actions(player,players,pile,discarded,take_open, discard,silent=True,simulat
                 if player.level==1 and simulated==False:
                     selected=[card]        
                 if player.level==1 and simulated==True:
-                    selected=closed.copy()                     
+                    selected=closed.copy()         
+                                #for human    
+            if player.level==1 and player.mode=='human':
+                    selected=[card]       
             #that random choice is passed to collected data
             if simulated==True and silent==False:
                 print(f"length is {len(selected)}")
@@ -552,7 +558,10 @@ def actions(player,players,pile,discarded,take_open, discard,silent=True,simulat
                 if player.level==1 and simulated==True:
                     selected=existing.copy()
                 if player.level==1 and simulated==False:
-                    selected=[card]       
+                    selected=[card]   
+            #for human    
+            if player.level==1 and player.mode=='human':
+                selected=[card]                    
             #get selected cards
             for i in range(len(selected)):
                 num3=num2.copy() 
@@ -679,7 +688,7 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
 #Currently implemented mode with levels 0, -1, -2, -3
 def turn(player,players,pile,discarded,silent=True,output=False):
     #global in_play parameter to check whether the game is over for one player
-    global in_play  #, player_2models, player_2columns for later   
+    global in_play,step  #, player_2models, player_2columns for later   
     #set take_open and discard
     if player.mode=='computer':
         #dictionaries here used level number to: models, column to be used, colomns of open, discard, index of card
@@ -724,15 +733,22 @@ def turn(player,players,pile,discarded,silent=True,output=False):
             if take_open==-1:
                 num1=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=1)
                 take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],1,silent=silent)   
+                
     #now action function
     if silent==False:
         print("player "+player.name+" turn")
         
-    #no card is preselected
+    #no card is preselected for first computer modes
     if player.level<=0:    
         num=actions(player,players,pile_closed,pile_open,take_open,discard,silent=silent)   
-    if player.level>0:    
-        num=actions(player,players,pile_closed,pile_open,take_open,discard,silent=silent,card=selected_card)        
+    if player.level>0:
+        if player.mode=='computer':
+            num=actions(player,players,pile_closed,pile_open,take_open,discard,silent=silent,card=selected_card)   
+        #at leats need at add step setting back
+        if player.mode=='human':
+            num=actions(player,players,pile_closed,pile_open,take_open,discard,silent=silent,card=card)
+            step=0
+        
     #check for vanishing cards
     van=player.check_vanish_cards()
     #marker for card vanishing
@@ -770,7 +786,7 @@ def turn(player,players,pile,discarded,silent=True,output=False):
 
 
 def allowed_modes(names,nature,levels):
-    #list of allowed computer level for 2 players, no humman currently implemented
+    #list of allowed computer level for 2 players
     #less implemented for more players
     comp_level_list2 = [1,0,-1,-2,-3]
     comp_level_list3 = [0,-1,-2,-3]
@@ -779,6 +795,9 @@ def allowed_modes(names,nature,levels):
     comp_level_list6 = [0,-1,-2,-3]
     comp_level_list7 = [0,-1,-2,-3]
     comp_level_list8 = [0,-1,-2,-3]
+    #human 
+    human_level_list=[1]
+    
     #default is true
     allowed=True
     #between 2 and 8 players and input lists of same length
@@ -790,22 +809,24 @@ def allowed_modes(names,nature,levels):
             if nature[i]=='computer' and len(names)==2 and any(levels[i] in comp_level_list2 for item in comp_level_list2)==False:
                 allowed=False
             #all option of player numbers implemented    
-            if nature[i]=='computer' and len(names)==3 and any(levels[i] in comp_level_list3 for item in comp_level_list3)==False:
+            elif nature[i]=='computer' and len(names)==3 and any(levels[i] in comp_level_list3 for item in comp_level_list3)==False:
                 allowed=False    
-            if nature[i]=='computer' and len(names)==4 and any(levels[i] in comp_level_list4 for item in comp_level_list4)==False:
+            elif nature[i]=='computer' and len(names)==4 and any(levels[i] in comp_level_list4 for item in comp_level_list4)==False:
                 allowed=False  
-            if nature[i]=='computer' and len(names)==5 and any(levels[i] in comp_level_list5 for item in comp_level_list5)==False:
+            elif nature[i]=='computer' and len(names)==5 and any(levels[i] in comp_level_list5 for item in comp_level_list5)==False:
                 allowed=False  
-            if nature[i]=='computer' and len(names)==6 and any(levels[i] in comp_level_list6 for item in comp_level_list6)==False:
+            elif nature[i]=='computer' and len(names)==6 and any(levels[i] in comp_level_list6 for item in comp_level_list6)==False:
                 allowed=False               
-            if nature[i]=='computer' and len(names)==7 and any(levels[i] in comp_level_list7 for item in comp_level_list7)==False:
+            elif nature[i]=='computer' and len(names)==7 and any(levels[i] in comp_level_list7 for item in comp_level_list7)==False:
                 allowed=False  
-            if nature[i]=='computer' and len(names)==8 and any(levels[i] in comp_level_list8 for item in comp_level_list8)==False:
-                allowed=False                  
-            #human is not implemented and will have different levels    
-            #for now because human not implemented    
-            if nature[i]!='computer':
+            elif nature[i]=='computer' and len(names)==8 and any(levels[i] in comp_level_list8 for item in comp_level_list8)==False:
+                allowed=False                    
+            #for human   
+            elif nature[i]=='human' and any(levels[i] in human_level_list for item in human_level_list)==False:
                 allowed=False
+            #rest does not exist
+            else:
+                allowed=False                
     return allowed             
 
 #parameters index of acting player of a turn, and the result of the players (some kind of score)
@@ -1062,7 +1083,7 @@ def skyjo_game(names,nature,levels,pause,silent=True,output=False):
             
 # draw function
 def draw(canvas):
-    global pile_open,pile_closed, players,card_b, step, discard, take_open
+    global pile_open,pile_closed, players,card_b, card_a, step, discard, take_open, player
     #display the top most card
     p_open=pile_open.list_cards[-1]
     p_closed=pile_closed.list_cards[-1]
@@ -1081,8 +1102,10 @@ def draw(canvas):
         else:    
             canvas.draw_text("Choose any card",pos_text,15,'Black')
             
-    if card_b!=None:
-        card_b.draw(canvas)
+    if card_c!=None:
+        card_c.draw(canvas)
+    #if card_a!=None: not done currently
+    #    card_a.draw(canvas)        
     for i in range(len(players)):
         for j in range(12):
             #only cards which exist are drawn:
@@ -1094,28 +1117,41 @@ def draw(canvas):
                     drawpos[1]=100+players[i].positiony[j]
                     card.set_position(drawpos)
                     card.draw(canvas)
-                    canvas.draw_text(players[i].name,(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')
+                    if players[i]!=player:
+                        canvas.draw_text(players[i].name,(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')
+                    else:   
+                        #indicate whose turn it is
+                        canvas.draw_text(players[i].name+" turn",(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')
                 if abs(len(players)-3.5)==0.5:
                     drawpos=list(card.position)
                     drawpos[0]=(i%2)*290+players[i].positionx[j]
                     drawpos[1]=180*(i//2)+100+players[i].positiony[j]
                     card.set_position(drawpos)
                     card.draw(canvas)
-                    canvas.draw_text(players[i].name,(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')
+                    if players[i]!=player:
+                        canvas.draw_text(players[i].name,(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')
+                    else:  
+                        canvas.draw_text(players[i].name+" turn",(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')                        
                 if abs(len(players)-5.5)==0.5:
                     drawpos=list(card.position)
                     drawpos[0]=(i%3)*290+players[i].positionx[j]
                     drawpos[1]=180*(i//3)+100+players[i].positiony[j]
                     card.set_position(drawpos)
                     card.draw(canvas)
-                    canvas.draw_text(players[i].name,(100+(i%3)*290,185*(1+(i//3))+90),15,'Black')     
+                    if players[i]!=player:
+                        canvas.draw_text(players[i].name,(100+(i%3)*290,185*(1+(i//3))+90),15,'Black')  
+                    else:
+                        canvas.draw_text(players[i].name+" turn",(100+(i%3)*290,185*(1+(i//3))+90),15,'Black')                        
                 if abs(len(players)-7.5)==0.5:
                     drawpos=list(card.position)
                     drawpos[0]=(i%4)*290+players[i].positionx[j]
                     drawpos[1]=180*(i//4)+100+players[i].positiony[j]
                     card.set_position(drawpos)
                     card.draw(canvas)
-                    canvas.draw_text(players[i].name,(100+(i%4)*290,185*(1+(i//4))+90),15,'Black')   
+                    if players[i]!=player:
+                        canvas.draw_text(players[i].name,(100+(i%4)*290,185*(1+(i//4))+90),15,'Black')   
+                    else: 
+                        canvas.draw_text(players[i].name+" turn",(100+(i%4)*290,185*(1+(i//4))+90),15,'Black')                        
 
 #for level 1 computer needed                     
 level1_2players_columns=np.loadtxt("xgb_model1_column2.txt")
@@ -1131,7 +1167,7 @@ level1_2players_model.load_model("xgb_model2.json")
 #winner=skyjo_game(names,nature,levels,0,False,False)
 
 #now human mode developement
-#needed it?
+#is the following function needed?
 def hit_start():
     global start
     #better but still not really
@@ -1155,28 +1191,53 @@ def discard_no():
         return discard  
 
 def mouseclick(pos):
-    global mousepos, take_open, discard, player, canvas, card_b, step, message
-    mousepos = list(pos)
-    #default is choice 0
-    pilepos=np.array([pile_closed.position,pile_open.position])
-    for i in range(2):
-        if step==0 and abs(mousepos[0]-(pilepos[i,0]+35))<35 and  abs(mousepos[1]-(pilepos[i,1]+25))<25:
-            if i==0:
-                step=1
-                take_open=False
-                card_b=pile_closed.give_card()
+    #card_c is just for display not actually used 
+    global mousepos, take_open, discard, player, canvas, card_c, step, card
+    #only for human
+    if player.mode=='human':
+        mousepos = list(pos)
+        #selecting which pile
+        pilepos=np.array([pile_closed.position,pile_open.position])
+        for i in range(2):
+            if step==0 and abs(mousepos[0]-(pilepos[i,0]+35))<35 and  abs(mousepos[1]-(pilepos[i,1]+25))<25:
+                if i==0:
+                    step=1
+                    take_open=False
+                    card_c=pile_closed.copy_card()
+                else:
+                    #step 1 not needed 
+                    step=2
+                    take_open=True
+                    discard=False
+                    #problem that open pile is empty if taken
+                    card_c=pile_open.copy_card()
+                newpos=[pilepos[i,0],pilepos[i,1]]
+                card_c.set_turn(True)
+                card_c.set_position(newpos)
+                card_c.set_state(True)                
+        #now selecting card
+        if step==2:
+            if take_open==False and discard==True:
+                cards=player.get_all_closed()
             else:
-                #step 1 not needed 
-                step=2
-                take_open=True
-                discard=False
-                #problem that open pile is empty if taken
-                card_b=pile_open.copy_card()
-            newpos=[pilepos[i,0],pilepos[i,1]]
-            card_b.set_turn(True)
-            card_b.set_position(newpos)
-            card_b.set_state(True)                
-    #works
+                cards=player.get_all_cards()  
+            for i in range(len(cards)):
+                if abs(mousepos[0]-(player.list_cards[cards[i]].position[0]+35))<35 and  abs(mousepos[1]-(player.list_cards[cards[i]].position[1]+25))<25:
+                    #continue to next step
+                    step=3
+                    #index number to be used
+                    card=cards[i]
+                    print(card)
+                    actions(player,players,pile_closed,pile_open,take_open,discard,silent=False,card=card)
+                    card_c=None
+                    step=0
+                    #display selected card? 
+                    #card_b.set_turn(True)
+                    
+                    return take_open, discard, card
+    if player.mode=='computer': 
+        #seems to work
+        turn(player,players,pile_open,pile_closed,silent=False,output=False)
                     
 #logic of human, mouseclick first set take_open
 #if closed card need to appear open somewhere (and other best marked) and message fwhether to discard it (optional)
@@ -1185,12 +1246,13 @@ def mouseclick(pos):
 
 pile_closed=Pile('create_closed',False)
 pile_open=Pile('create_open',pile_closed)
-alpha=Player("alpha",'human',0,pile_closed)
-beta=Player("beta",'human',0,pile_closed) 
-card_b=None
+alpha=Player("alpha",'human',1,pile_closed)
+beta=Player("beta",'human',1,pile_closed) 
+card_c=None
+card=-1
 players=[alpha,beta]
-starter=who_starts(True,players,None,silent=True)
-print(starter.name)
+player=who_starts(True,players,None,silent=True)
+print(player.name)
 if len(players)==2:
     frame = simplegui.create_frame("Skyjo", 290+280*(1), 100+3*50+30) 
 if abs(len(players)-3.5)==0.5:
@@ -1205,7 +1267,10 @@ frame.add_button("discard", discard_yes, 200)
 frame.add_button("keep", discard_no, 200)
 take_open=False
 step=0
-message=""
+
 frame.set_mouseclick_handler(mouseclick)
 frame.set_draw_handler(draw)
 frame.start()
+#computer does not do anything 
+turn(player,players,pile_open,pile_closed,silent=True,output=False)
+#how to implement comuter and player? (2 player i could implemnt but disconnected to the rest of the game )
