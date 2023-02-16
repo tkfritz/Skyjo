@@ -79,7 +79,7 @@ class Pile:
             #all closed in this mode
             self.open=False
             #postion in gui
-            self.position=[100,10]
+            self.position=[20,10]
             #number of cards per type
             dict_num={-2:5,-1:10,0:15,1:10,2:10,3:10,4:10,5:10,6:10,7:10,8:10,9:10,10:10,11:10,12:10}
             #create empty list
@@ -102,7 +102,7 @@ class Pile:
         #create open pile from other    starts with just one card
         if mode=='create_open': 
             #postion in gui
-            self.position=[300,10]   
+            self.position=[220,10]   
             #is open 
             self.open=True
             self.list_cards=[]
@@ -1062,13 +1062,25 @@ def skyjo_game(names,nature,levels,pause,silent=True,output=False):
             
 # draw function
 def draw(canvas):
-    global pile_open,pile_closed, players,card_b
+    global pile_open,pile_closed, players,card_b, step, discard, take_open
     #display the top most card
     p_open=pile_open.list_cards[-1]
     p_closed=pile_closed.list_cards[-1]
     # test to make sure that card.draw works
     p_open.draw(canvas)
     p_closed.draw(canvas)
+    pos_text=[293,45]
+    #instructions what to do 
+    if step==0:
+        canvas.draw_text("Choose open or closed pile",pos_text,15,'Black')
+    if step==1:
+        canvas.draw_text("Discard or keep?",pos_text,15,'Black')
+    if step==2:
+        if discard==True and take_open==False:
+            canvas.draw_text("Choose closed card",pos_text,15,'Black')
+        else:    
+            canvas.draw_text("Choose any card",pos_text,15,'Black')
+            
     if card_b!=None:
         card_b.draw(canvas)
     for i in range(len(players)):
@@ -1082,28 +1094,28 @@ def draw(canvas):
                     drawpos[1]=100+players[i].positiony[j]
                     card.set_position(drawpos)
                     card.draw(canvas)
-                    canvas.draw_text(players[i].name,(100+(i%2)*290,180*(1+(i//2))+90),15,'Black')
+                    canvas.draw_text(players[i].name,(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')
                 if abs(len(players)-3.5)==0.5:
                     drawpos=list(card.position)
                     drawpos[0]=(i%2)*290+players[i].positionx[j]
                     drawpos[1]=180*(i//2)+100+players[i].positiony[j]
                     card.set_position(drawpos)
                     card.draw(canvas)
-                    canvas.draw_text(players[i].name,(100+(i%2)*290,180*(1+(i//2))+90),15,'Black')
+                    canvas.draw_text(players[i].name,(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')
                 if abs(len(players)-5.5)==0.5:
                     drawpos=list(card.position)
                     drawpos[0]=(i%3)*290+players[i].positionx[j]
                     drawpos[1]=180*(i//3)+100+players[i].positiony[j]
                     card.set_position(drawpos)
                     card.draw(canvas)
-                    canvas.draw_text(players[i].name,(100+(i%3)*290,180*(1+(i//3))+90),15,'Black')     
+                    canvas.draw_text(players[i].name,(100+(i%3)*290,185*(1+(i//3))+90),15,'Black')     
                 if abs(len(players)-7.5)==0.5:
                     drawpos=list(card.position)
                     drawpos[0]=(i%4)*290+players[i].positionx[j]
                     drawpos[1]=180*(i//4)+100+players[i].positiony[j]
                     card.set_position(drawpos)
                     card.draw(canvas)
-                    canvas.draw_text(players[i].name,(100+(i%4)*290,180*(1+(i//4))+90),15,'Black')   
+                    canvas.draw_text(players[i].name,(100+(i%4)*290,185*(1+(i//4))+90),15,'Black')   
 
 #for level 1 computer needed                     
 level1_2players_columns=np.loadtxt("xgb_model1_column2.txt")
@@ -1127,37 +1139,43 @@ def hit_start():
     #only appears at the end
     
 def discard_yes():
-    discard=True
-    return discard    
+    global step,discard
+    if step==1:
+        discard=True
+        step=2
+        print(discard, step)
+        return discard    
 
 def discard_no():
-    discard=False
-    return discard  
+    global step, discard
+    if step==1:
+        discard=False
+        step=2
+        print(discard, step)
+        return discard  
 
 def mouseclick(pos):
-    global mousepos, take_open, discard, player, canvas, card_b
+    global mousepos, take_open, discard, player, canvas, card_b, step, message
     mousepos = list(pos)
     #default is choice 0
     pilepos=np.array([pile_closed.position,pile_open.position])
     for i in range(2):
-        if abs(mousepos[0]-(pilepos[i,0]+35))<35 and  abs(mousepos[1]-(pilepos[i,1]+25))<25:
+        if step==0 and abs(mousepos[0]-(pilepos[i,0]+35))<35 and  abs(mousepos[1]-(pilepos[i,1]+25))<25:
             if i==0:
+                step=1
                 take_open=False
                 card_b=pile_closed.give_card()
-                #shift by 70 to the right and set to open
-                newpos=[pilepos[i,0]+70,pilepos[i,1]]
             else:
+                #step 1 not needed 
+                step=2
                 take_open=True
+                discard=False
                 #problem that open pile is empty if taken
                 card_b=pile_open.copy_card()
-                newpos=[pilepos[i,0],pilepos[i,1]]
+            newpos=[pilepos[i,0],pilepos[i,1]]
             card_b.set_turn(True)
             card_b.set_position(newpos)
             card_b.set_state(True)                
-            print(card_b)
-            
-            
-    print(take_open) 
     #works
                     
 #logic of human, mouseclick first set take_open
@@ -1185,7 +1203,9 @@ frame.set_canvas_background("White")
 frame.add_button("start", hit_start, 200)    
 frame.add_button("discard", discard_yes, 200)
 frame.add_button("keep", discard_no, 200)
-take_open=2
+take_open=False
+step=0
+message=""
 frame.set_mouseclick_handler(mouseclick)
 frame.set_draw_handler(draw)
 frame.start()
