@@ -684,6 +684,26 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
             print(f"minimum is for using a closed card")   
         return -1, -1, -1            
 
+#check whether cards need to vanish and applies it 
+def vanish_check(player,silent=True):
+    global pile_open
+    #check for vanishing cards
+    van=player.check_vanish_cards()
+    #marker for card vanishing
+    card_needs_to_vanish=False
+    if van>-1:
+        card_needs_to_vanish=True
+        #cards are taken from player
+        card1,card2,card3=player.vanish_cards(van)
+        #given to open pile
+        pile_open.get_card(card1)
+        pile_open.get_card(card2)
+        pile_open.get_card(card3)
+        if silent==False:        
+            print("3 "+str(card1.number)+" vanish from Player")
+    return card_needs_to_vanish        
+
+
 #parameters: current player, all players (only needed for numeric output collection and for choosing startegry in some levels, closed_pile, discarded_pile, 
 #Currently implemented mode with levels 0, -1, -2, -3
 def turn(player,players,pile,discarded,silent=True,output=False):
@@ -748,21 +768,7 @@ def turn(player,players,pile,discarded,silent=True,output=False):
         if player.mode=='human':
             num=actions(player,players,pile_closed,pile_open,take_open,discard,silent=silent,card=card)
             step=0
-        
-    #check for vanishing cards
-    van=player.check_vanish_cards()
-    #marker for card vanishing
-    card_needs_to_vanish=False
-    if van>-1:
-        card_needs_to_vanish=True
-        #cards are taken from player
-        card1,card2,card3=player.vanish_cards(van)
-        #given to open pile
-        pile_open.get_card(card1)
-        pile_open.get_card(card2)
-        pile_open.get_card(card3)
-        if silent==False:        
-            print("3 "+str(card1.number)+" vanish from Player")
+    card_needs_to_vanish=vanish_check(player,silent=silent)    
     #refill closed pile if needed 
     pile_closed.refill(pile_open)
     #check whether there are still closed cards 
@@ -1198,7 +1204,7 @@ def discard_no():
 
 def mouseclick(pos):
     #card_c is just for display not actually used 
-    global mousepos, take_open, discard, player, canvas, card_c, step, card, in_play, counter, endcounter, end_score, finisher, players, silent
+    global mousepos, take_open, discard, player, canvas, card_c, step, card, in_play, counter, endcounter, end_score, finisher, players, silent,numeric, output, file_name
     #if game is going one
     if sum(np.abs(end_score))==0:
        #only for human
@@ -1233,9 +1239,11 @@ def mouseclick(pos):
                     if abs(mousepos[0]-(player.list_cards[cards[i]].position[0]+35))<35 and  abs(mousepos[1]-(player.list_cards[cards[i]].position[1]+25))<25:
                         #index number to be used
                         card=cards[i]
-                        actions(player,players,pile_closed,pile_open,take_open,discard,silent=silent,card=card)
+                        num=actions(player,players,pile_closed,pile_open,take_open,discard,silent=silent,card=card)
+                        num2=np.zeros((len(num)+1))
+                        num2[:len(num)]=num
                         card_c=None
-                        step=0
+                        step=3
                         counter+=1
                         if in_play==False:
                             endcounter+=1
@@ -1243,27 +1251,20 @@ def mouseclick(pos):
                         #card_b.set_turn(True)
                         #return makes to stop here and seems not needed it here
                         #return take_open, discard, card
+        if player.mode=='human' and step==3:
+            #needs extra to avoid warnings
+            card_needs_to_vanish=vanish_check(player,silent=silent)
+            num2[len(num)]=card_needs_to_vanish
+            numeric.append(num2)
+            step=0
+            
         if player.mode=='computer': 
             #two clicks needed to advance computer 
-            turn(player,players,pile_open,pile_closed,silent=silent,output=False)
+            x, z, t, u, num2=turn(player,players,pile_open,pile_closed,silent=silent,output=True)
+            numeric.append(num2)
             counter+=1
             if in_play==False:
                 endcounter+=1
-                
-        #end of turn actions     
-        van=player.check_vanish_cards()
-        #marker for card vanishing
-        card_needs_to_vanish=False
-        if van>-1:
-            card_needs_to_vanish=True
-            #cards are taken from player
-            card1,card2,card3=player.vanish_cards(van)
-            #given to open pile
-            pile_open.get_card(card1)
-            pile_open.get_card(card2)
-            pile_open.get_card(card3)
-            if silent==False:        
-                print("3 "+str(card1.number)+" vanish from Player")
         #refill closed pile if needed 
         pile_closed.refill(pile_open)
         #check whether there are still closed cards 
@@ -1299,7 +1300,21 @@ def mouseclick(pos):
                     if scores[finisher]>=scores[i]:
                         scores[finisher]*=2
                         not_finisher=True
-        end_score=scores.copy()                
+        if output==True and sum(np.abs(end_score))==0: 
+            #output mostly the output of the round, plus round number and 
+            #at the end the scores in the same order as players in that turn
+            num3=np.zeros((len(num2)+len(scores)+1,len(numeric)),int)
+            for i in range(len(numeric)):
+                num3[:len(num2),i]=numeric[i]
+                #turn number
+                num3[len(num2),i]=i
+                #reorder scores
+                res=reorder_players(num3[0,i],scores)
+                #pass to array
+                num3[len(num2)+1:len(num2)+len(scores)+1,i]=res   
+            np.savetxt(file_name,num3)
+        #end the game     
+        end_score=scores.copy()     
         if silent==False:
             print("score of round is "+str(scores))
 
@@ -1324,11 +1339,14 @@ card=-1
 in_play=True
 endcounter=0
 end_score=[]
+numeric=[]
+file_name='human_computer1_003.txt'
 for i in range(len(players)):
     end_score.append(0)
 finisher=0
 take_open=False
 step=0
+output=True
 
 #prints in terminal? 
 silent=True
