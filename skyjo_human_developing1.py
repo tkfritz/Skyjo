@@ -231,7 +231,7 @@ class Player:
     #copy card for simulation
     def copy_card(self,i):
         card=Card(self.list_cards[i].number)
-        card.set_state(self.state)
+        card.set_state(self.list_cards[i].open)
         #old let to unwanted changes in given objects partly
         #card=self.list_cards[i]
         return card    
@@ -1092,7 +1092,7 @@ def draw(canvas):
     p_closed.draw(canvas)
     pos_text=[293,45]
     #if not ended 
-    if sum(np.abs(end_score))==0:
+    if sum(np.abs(end_score))==0 and player.mode=='human':
         #instructions what to do 
         if step==0:
             canvas.draw_text("Choose open or closed pile",pos_text,15,'Black')
@@ -1103,6 +1103,8 @@ def draw(canvas):
                canvas.draw_text("Choose closed card",pos_text,15,'Black')
             else:    
                canvas.draw_text("Choose any card",pos_text,15,'Black')
+    elif player.mode=='computer' and sum(np.abs(end_score))==0:
+        canvas.draw_text("Click anywhere for computer",pos_text,15,'Black')
     else:
         canvas.draw_text("Player "+players[np.argmin(end_score)].name+" won",pos_text,15,'Black')
         
@@ -1247,7 +1249,7 @@ def mouseclick(pos):
                     
                         return take_open, discard, card
         if player.mode=='computer': 
-            #seems to work
+            #two clicks needed to advance computer 
             turn(player,players,pile_open,pile_closed,silent=False,output=False)
             counter+=1
             if in_play==False:
@@ -1314,7 +1316,7 @@ def mouseclick(pos):
 pile_closed=Pile('create_closed',False)
 pile_open=Pile('create_open',pile_closed)
 alpha=Player("alpha",'human',1,pile_closed)
-beta=Player("beta",'computer',0,pile_closed) 
+beta=Player("beta",'computer',1,pile_closed) 
 players=[alpha,beta]
 card_c=None
 card=-1
