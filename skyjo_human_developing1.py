@@ -1106,7 +1106,7 @@ def draw(canvas):
     elif player.mode=='computer' and sum(np.abs(end_score))==0:
         canvas.draw_text("Click anywhere for computer",pos_text,15,'Black')
     else:
-        canvas.draw_text("Player "+players[np.argmin(end_score)].name+" won",pos_text,15,'Black')
+        canvas.draw_text(players[np.argmin(end_score)].name+" won",pos_text,15,'Black')
         
     if card_c!=None:
         card_c.draw(canvas)
@@ -1161,15 +1161,15 @@ level1_2players_model.load_model("xgb_model2.json")
 #now human mode developement
 #for restart (should be full game at some point)
 def new_game():
-    global mousepos, take_open, discard, player, canvas, card_c, step, card, in_play, counter, endcounter, end_score, finisher, players
+    global mousepos, take_open, discard, player, canvas, card_c, step, card, in_play, counter, endcounter, end_score, finisher, players, names, mode, level, silent
     pile_closed=Pile('create_closed',False)
     pile_open=Pile('create_open',pile_closed)
-    alpha=Player("alpha",'human',1,pile_closed)
-    beta=Player("beta",'human',1,pile_closed) 
+    #modes should be the same as in the overall game 
+    alpha=Player(names[0],mode[0],level[0],pile_closed)
+    beta=Player(names[1],mode[1],level[1],pile_closed) 
     card_c=None
     card=-1
     in_play=True
-    silent=False
     endcounter=0
     take_open=False
     step=0
@@ -1187,7 +1187,6 @@ def discard_yes():
     if step==1:
         discard=True
         step=2
-        print(discard, step)
         return discard    
 
 def discard_no():
@@ -1195,12 +1194,11 @@ def discard_no():
     if step==1:
         discard=False
         step=2
-        print(discard, step)
         return discard  
 
 def mouseclick(pos):
     #card_c is just for display not actually used 
-    global mousepos, take_open, discard, player, canvas, card_c, step, card, in_play, counter, endcounter, end_score, finisher
+    global mousepos, take_open, discard, player, canvas, card_c, step, card, in_play, counter, endcounter, end_score, finisher, players, silent
     #if game is going one
     if sum(np.abs(end_score))==0:
        #only for human
@@ -1233,12 +1231,9 @@ def mouseclick(pos):
                     cards=player.get_all_cards()  
                 for i in range(len(cards)):
                     if abs(mousepos[0]-(player.list_cards[cards[i]].position[0]+35))<35 and  abs(mousepos[1]-(player.list_cards[cards[i]].position[1]+25))<25:
-                        #continue to next step
-                        step=3
                         #index number to be used
                         card=cards[i]
-                        print(card)
-                        actions(player,players,pile_closed,pile_open,take_open,discard,silent=False,card=card)
+                        actions(player,players,pile_closed,pile_open,take_open,discard,silent=silent,card=card)
                         card_c=None
                         step=0
                         counter+=1
@@ -1246,11 +1241,11 @@ def mouseclick(pos):
                             endcounter+=1
                         #display selected card? 
                         #card_b.set_turn(True)
-                    
-                        return take_open, discard, card
+                        #return makes to stop here and seems not needed it here
+                        #return take_open, discard, card
         if player.mode=='computer': 
             #two clicks needed to advance computer 
-            turn(player,players,pile_open,pile_closed,silent=False,output=False)
+            turn(player,players,pile_open,pile_closed,silent=silent,output=False)
             counter+=1
             if in_play==False:
                 endcounter+=1
@@ -1273,7 +1268,6 @@ def mouseclick(pos):
         pile_closed.refill(pile_open)
         #check whether there are still closed cards 
         closed=player.get_all_closed()
-        print(len(closed),in_play)
         #if not play ends for this player and marker is set to not in_play
         if len(closed)==0:
             #finisher needed for score
@@ -1291,7 +1285,6 @@ def mouseclick(pos):
             cards=players[i].get_all_cards()
             for j in range(len(cards)):
                 players[i].list_cards[cards[j]].set_state(True)
-        print(finisher,counter)
         scores=[]
         for i in range(len(players)):
             #get score of each player
@@ -1312,16 +1305,23 @@ def mouseclick(pos):
 
 #correct besides that word and vanishing appear one later than wanted                    
 
+#define players
+names=('You','Computer')
+mode=('human','computer')
+level=(1,1)
 
+#create pile and players
 pile_closed=Pile('create_closed',False)
 pile_open=Pile('create_open',pile_closed)
-alpha=Player("alpha",'human',1,pile_closed)
-beta=Player("beta",'computer',1,pile_closed) 
+alpha=Player(names[0],mode[0],level[0],pile_closed)
+beta=Player(names[1],mode[1],level[1],pile_closed) 
 players=[alpha,beta]
+#in play card just for visulaization 
 card_c=None
+#chossen card dummy 
 card=-1
+#play parameter
 in_play=True
-silent=False
 endcounter=0
 end_score=[]
 for i in range(len(players)):
@@ -1329,8 +1329,13 @@ for i in range(len(players)):
 finisher=0
 take_open=False
 step=0
-player=who_starts(True,players,None,silent=True)
-print(player.name)
+
+#prints in terminal? 
+silent=True
+
+player=who_starts(True,players,None,silent=silent)
+if silent==False:
+    print(player.name+" starts")
 #index of starter player
 counter=players.index(player)
 if len(players)==2:
