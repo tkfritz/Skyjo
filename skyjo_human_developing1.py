@@ -1083,7 +1083,7 @@ def skyjo_game(names,nature,levels,pause,silent=True,output=False):
             
 # draw function
 def draw(canvas):
-    global pile_open,pile_closed, players,card_b, card_a, step, discard, take_open, player, end_score
+    global pile_open,pile_closed, players,card_b, card_a, step, discard, take_open, player, end_score, player
     #display the top most card
     p_open=pile_open.list_cards[-1]
     p_closed=pile_closed.list_cards[-1]
@@ -1092,7 +1092,7 @@ def draw(canvas):
     p_closed.draw(canvas)
     pos_text=[293,45]
     #if not ended 
-    if end_score==[0,0]:
+    if sum(np.abs(end_score))==0:
         #instructions what to do 
         if step==0:
             canvas.draw_text("Choose open or closed pile",pos_text,15,'Black')
@@ -1121,9 +1121,9 @@ def draw(canvas):
                     drawpos[1]=100+players[i].positiony[j]
                     card.set_position(drawpos)
                     card.draw(canvas)
-                    if players[i]!=player  and end_score==[0,0]:
+                    if players[i]!=player  and sum(np.abs(end_score))==0:
                         canvas.draw_text(players[i].name,(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')
-                    elif players[i]==player and end_score==[0,0]:   
+                    elif players[i]==player and sum(np.abs(end_score))==0 :   
                         #indicate whose turn it is
                         canvas.draw_text(players[i].name+" turn",(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')   
                     else:
@@ -1136,9 +1136,9 @@ def draw(canvas):
                     drawpos[1]=180*(i//x)+100+players[i].positiony[j]
                     card.set_position(drawpos)
                     card.draw(canvas)
-                    if players[i]!=player and end_score==[0,0]:
+                    if players[i]!=player and sum(np.abs(end_score))==0:
                         canvas.draw_text(players[i].name,(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')   
-                    elif players[i]==player and end_score==[0,0]: 
+                    elif players[i]==player and sum(np.abs(end_score))==0: 
                         canvas.draw_text(players[i].name+" turn",(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')                        
                     else:
                         canvas.draw_text(players[i].name+" "+str(end_score[i]),(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')  
@@ -1157,9 +1157,9 @@ level1_2players_model.load_model("xgb_model2.json")
 #winner=skyjo_game(names,nature,levels,0,False,False)
 
 #now human mode developement
-#is the following function needed?
+#for restart (should be full game at some point)
 def new_game():
-    global mousepos, take_open, discard, player, canvas, card_c, step, card, in_play, counter, endcounter
+    global mousepos, take_open, discard, player, canvas, card_c, step, card, in_play, counter, endcounter, end_score, finisher, players
     pile_closed=Pile('create_closed',False)
     pile_open=Pile('create_open',pile_closed)
     alpha=Player("alpha",'human',1,pile_closed)
@@ -1169,8 +1169,15 @@ def new_game():
     in_play=True
     silent=False
     endcounter=0
+    take_open=False
+    step=0
     players=[alpha,beta]
+    end_score=[]
+    for i in range(len(players)):
+        end_score.append(0)
+    
     player=who_starts(True,players,None,silent=True)
+    counter=players.index(player)
     print(player.name)
 
 def discard_yes():
@@ -1193,7 +1200,7 @@ def mouseclick(pos):
     #card_c is just for display not actually used 
     global mousepos, take_open, discard, player, canvas, card_c, step, card, in_play, counter, endcounter, end_score, finisher
     #if game is going one
-    if end_score==[0,0]:
+    if sum(np.abs(end_score))==0:
        #only for human
         if player.mode=='human':
             mousepos = list(pos)
@@ -1269,13 +1276,20 @@ def mouseclick(pos):
         if len(closed)==0:
             #finisher needed for score
             if in_play==True:
-                finisher=counter%len(players)
+                #counter -1 because enlarged before this is tested 
+                finisher=(counter-1)%len(players)
             in_play=False
             if silent==False:        
                 print("player "+player.name+" opened all cards")   
         player=players[counter%len(players)] 
     
     if endcounter==len(players)-1:
+        #open all cards
+        for i in range(len(players)):
+            cards=players[i].get_all_cards()
+            for j in range(len(cards)):
+                players[i].list_cards[cards[j]].set_state(True)
+        print(finisher,counter)
         scores=[]
         for i in range(len(players)):
             #get score of each player
@@ -1300,15 +1314,19 @@ def mouseclick(pos):
 pile_closed=Pile('create_closed',False)
 pile_open=Pile('create_open',pile_closed)
 alpha=Player("alpha",'human',1,pile_closed)
-beta=Player("beta",'human',1,pile_closed) 
+beta=Player("beta",'computer',0,pile_closed) 
+players=[alpha,beta]
 card_c=None
 card=-1
 in_play=True
 silent=False
 endcounter=0
-end_score=[0,0]
+end_score=[]
+for i in range(len(players)):
+    end_score.append(0)
 finisher=0
-players=[alpha,beta]
+take_open=False
+step=0
 player=who_starts(True,players,None,silent=True)
 print(player.name)
 #index of starter player
@@ -1322,15 +1340,12 @@ if abs(len(players)-5.5)==0.5:
 if abs(len(players)-7.5)==0.5:
     frame = simplegui.create_frame("Skyjo", 290+280*(3)+20, 100+3*50*2+60)  
 frame.set_canvas_background("White")
-frame.add_button("new_game", new_game, 200)    
+frame.add_button("new game", new_game, 200)    
 frame.add_button("discard", discard_yes, 200)
 frame.add_button("keep", discard_no, 200)
-take_open=False
-step=0
+
 
 frame.set_mouseclick_handler(mouseclick)
 frame.set_draw_handler(draw)
 frame.start()
-#computer does not do anything 
-turn(player,players,pile_open,pile_closed,silent=True,output=False)
-#how to implement comuter and player? (2 player i could implemnt but disconnected to the rest of the game )
+
