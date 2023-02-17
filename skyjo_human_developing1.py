@@ -1083,7 +1083,7 @@ def skyjo_game(names,nature,levels,pause,silent=True,output=False):
             
 # draw function
 def draw(canvas):
-    global pile_open,pile_closed, players,card_b, card_a, step, discard, take_open, player
+    global pile_open,pile_closed, players,card_b, card_a, step, discard, take_open, player, end_score
     #display the top most card
     p_open=pile_open.list_cards[-1]
     p_closed=pile_closed.list_cards[-1]
@@ -1091,17 +1091,21 @@ def draw(canvas):
     p_open.draw(canvas)
     p_closed.draw(canvas)
     pos_text=[293,45]
-    #instructions what to do 
-    if step==0:
-        canvas.draw_text("Choose open or closed pile",pos_text,15,'Black')
-    if step==1:
-        canvas.draw_text("Discard or keep?",pos_text,15,'Black')
-    if step==2:
-        if discard==True and take_open==False:
-            canvas.draw_text("Choose closed card",pos_text,15,'Black')
-        else:    
-            canvas.draw_text("Choose any card",pos_text,15,'Black')
-            
+    #if not ended 
+    if end_score==[0,0]:
+        #instructions what to do 
+        if step==0:
+            canvas.draw_text("Choose open or closed pile",pos_text,15,'Black')
+        if step==1:
+            canvas.draw_text("Discard or keep?",pos_text,15,'Black')
+        if step==2:
+            if discard==True and take_open==False:
+               canvas.draw_text("Choose closed card",pos_text,15,'Black')
+            else:    
+               canvas.draw_text("Choose any card",pos_text,15,'Black')
+    else:
+        canvas.draw_text("Player "+players[np.argmin(end_score)].name+" won",pos_text,15,'Black')
+        
     if card_c!=None:
         card_c.draw(canvas)
     #if card_a!=None: not done currently
@@ -1117,42 +1121,28 @@ def draw(canvas):
                     drawpos[1]=100+players[i].positiony[j]
                     card.set_position(drawpos)
                     card.draw(canvas)
-                    if players[i]!=player:
+                    if players[i]!=player  and end_score==[0,0]:
                         canvas.draw_text(players[i].name,(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')
-                    else:   
+                    elif players[i]==player and end_score==[0,0]:   
                         #indicate whose turn it is
-                        canvas.draw_text(players[i].name+" turn",(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')
-                if abs(len(players)-3.5)==0.5:
-                    drawpos=list(card.position)
-                    drawpos[0]=(i%2)*290+players[i].positionx[j]
-                    drawpos[1]=180*(i//2)+100+players[i].positiony[j]
-                    card.set_position(drawpos)
-                    card.draw(canvas)
-                    if players[i]!=player:
-                        canvas.draw_text(players[i].name,(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')
-                    else:  
-                        canvas.draw_text(players[i].name+" turn",(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')                        
-                if abs(len(players)-5.5)==0.5:
-                    drawpos=list(card.position)
-                    drawpos[0]=(i%3)*290+players[i].positionx[j]
-                    drawpos[1]=180*(i//3)+100+players[i].positiony[j]
-                    card.set_position(drawpos)
-                    card.draw(canvas)
-                    if players[i]!=player:
-                        canvas.draw_text(players[i].name,(100+(i%3)*290,185*(1+(i//3))+90),15,'Black')  
+                        canvas.draw_text(players[i].name+" turn",(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')   
                     else:
-                        canvas.draw_text(players[i].name+" turn",(100+(i%3)*290,185*(1+(i//3))+90),15,'Black')                        
-                if abs(len(players)-7.5)==0.5:
+                        canvas.draw_text(players[i].name+" "+str(end_score[i]),(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')                         
+                if len(players)>2:
+                    #paramter how to structure the layout
+                    x=round(len(players)/2)
                     drawpos=list(card.position)
-                    drawpos[0]=(i%4)*290+players[i].positionx[j]
-                    drawpos[1]=180*(i//4)+100+players[i].positiony[j]
+                    drawpos[0]=(i%x)*290+players[i].positionx[j]
+                    drawpos[1]=180*(i//x)+100+players[i].positiony[j]
                     card.set_position(drawpos)
                     card.draw(canvas)
-                    if players[i]!=player:
-                        canvas.draw_text(players[i].name,(100+(i%4)*290,185*(1+(i//4))+90),15,'Black')   
-                    else: 
-                        canvas.draw_text(players[i].name+" turn",(100+(i%4)*290,185*(1+(i//4))+90),15,'Black')                        
-
+                    if players[i]!=player and end_score==[0,0]:
+                        canvas.draw_text(players[i].name,(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')   
+                    elif players[i]==player and end_score==[0,0]: 
+                        canvas.draw_text(players[i].name+" turn",(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')                        
+                    else:
+                        canvas.draw_text(players[i].name+" "+str(end_score[i]),(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')  
+                        
 #for level 1 computer needed                     
 level1_2players_columns=np.loadtxt("xgb_model1_column2.txt")
 level1_2players_model = XGBRegressor()
@@ -1168,12 +1158,21 @@ level1_2players_model.load_model("xgb_model2.json")
 
 #now human mode developement
 #is the following function needed?
-def hit_start():
-    global start
-    #better but still not really
-    players,scores,turns=skyjo_round(names,nature,levels,1) 
-    #only appears at the end
-    
+def new_game():
+    global mousepos, take_open, discard, player, canvas, card_c, step, card, in_play, counter, endcounter
+    pile_closed=Pile('create_closed',False)
+    pile_open=Pile('create_open',pile_closed)
+    alpha=Player("alpha",'human',1,pile_closed)
+    beta=Player("beta",'human',1,pile_closed) 
+    card_c=None
+    card=-1
+    in_play=True
+    silent=False
+    endcounter=0
+    players=[alpha,beta]
+    player=who_starts(True,players,None,silent=True)
+    print(player.name)
+
 def discard_yes():
     global step,discard
     if step==1:
@@ -1192,57 +1191,111 @@ def discard_no():
 
 def mouseclick(pos):
     #card_c is just for display not actually used 
-    global mousepos, take_open, discard, player, canvas, card_c, step, card
-    #only for human
-    if player.mode=='human':
-        mousepos = list(pos)
-        #selecting which pile
-        pilepos=np.array([pile_closed.position,pile_open.position])
-        for i in range(2):
-            if step==0 and abs(mousepos[0]-(pilepos[i,0]+35))<35 and  abs(mousepos[1]-(pilepos[i,1]+25))<25:
-                if i==0:
-                    step=1
-                    take_open=False
-                    card_c=pile_closed.copy_card()
+    global mousepos, take_open, discard, player, canvas, card_c, step, card, in_play, counter, endcounter, end_score, finisher
+    #if game is going one
+    if end_score==[0,0]:
+       #only for human
+        if player.mode=='human':
+            mousepos = list(pos)
+            #selecting which pile
+            pilepos=np.array([pile_closed.position,pile_open.position])
+            for i in range(2):
+                if step==0 and abs(mousepos[0]-(pilepos[i,0]+35))<35 and  abs(mousepos[1]-(pilepos[i,1]+25))<25:
+                    if i==0:
+                        step=1
+                        take_open=False
+                        card_c=pile_closed.copy_card()
+                    else:
+                        #step 1 not needed 
+                        step=2
+                        take_open=True
+                        discard=False
+                        #problem that open pile is empty if taken
+                        card_c=pile_open.copy_card()
+                    newpos=[pilepos[i,0],pilepos[i,1]]
+                    card_c.set_turn(True)
+                    card_c.set_position(newpos)
+                    card_c.set_state(True)                
+            #now selecting card
+            if step==2:
+                if take_open==False and discard==True:
+                   cards=player.get_all_closed()
                 else:
-                    #step 1 not needed 
-                    step=2
-                    take_open=True
-                    discard=False
-                    #problem that open pile is empty if taken
-                    card_c=pile_open.copy_card()
-                newpos=[pilepos[i,0],pilepos[i,1]]
-                card_c.set_turn(True)
-                card_c.set_position(newpos)
-                card_c.set_state(True)                
-        #now selecting card
-        if step==2:
-            if take_open==False and discard==True:
-                cards=player.get_all_closed()
-            else:
-                cards=player.get_all_cards()  
-            for i in range(len(cards)):
-                if abs(mousepos[0]-(player.list_cards[cards[i]].position[0]+35))<35 and  abs(mousepos[1]-(player.list_cards[cards[i]].position[1]+25))<25:
-                    #continue to next step
-                    step=3
-                    #index number to be used
-                    card=cards[i]
-                    print(card)
-                    actions(player,players,pile_closed,pile_open,take_open,discard,silent=False,card=card)
-                    card_c=None
-                    step=0
-                    #display selected card? 
-                    #card_b.set_turn(True)
+                    cards=player.get_all_cards()  
+                for i in range(len(cards)):
+                    if abs(mousepos[0]-(player.list_cards[cards[i]].position[0]+35))<35 and  abs(mousepos[1]-(player.list_cards[cards[i]].position[1]+25))<25:
+                        #continue to next step
+                        step=3
+                        #index number to be used
+                        card=cards[i]
+                        print(card)
+                        actions(player,players,pile_closed,pile_open,take_open,discard,silent=False,card=card)
+                        card_c=None
+                        step=0
+                        counter+=1
+                        if in_play==False:
+                            endcounter+=1
+                        #display selected card? 
+                        #card_b.set_turn(True)
                     
-                    return take_open, discard, card
-    if player.mode=='computer': 
-        #seems to work
-        turn(player,players,pile_open,pile_closed,silent=False,output=False)
-                    
-#logic of human, mouseclick first set take_open
-#if closed card need to appear open somewhere (and other best marked) and message fwhether to discard it (optional)
-#if not next mouseclick on the allowed cards which depends
-#end of turn at the end implemented in turn
+                        return take_open, discard, card
+        if player.mode=='computer': 
+            #seems to work
+            turn(player,players,pile_open,pile_closed,silent=False,output=False)
+            counter+=1
+            if in_play==False:
+                endcounter+=1
+                
+        #end of turn actions     
+        van=player.check_vanish_cards()
+        #marker for card vanishing
+        card_needs_to_vanish=False
+        if van>-1:
+            card_needs_to_vanish=True
+            #cards are taken from player
+            card1,card2,card3=player.vanish_cards(van)
+            #given to open pile
+            pile_open.get_card(card1)
+            pile_open.get_card(card2)
+            pile_open.get_card(card3)
+            if silent==False:        
+                print("3 "+str(card1.number)+" vanish from Player")
+        #refill closed pile if needed 
+        pile_closed.refill(pile_open)
+        #check whether there are still closed cards 
+        closed=player.get_all_closed()
+        print(len(closed),in_play)
+        #if not play ends for this player and marker is set to not in_play
+        if len(closed)==0:
+            #finisher needed for score
+            if in_play==True:
+                finisher=counter%len(players)
+            in_play=False
+            if silent==False:        
+                print("player "+player.name+" opened all cards")   
+        player=players[counter%len(players)] 
+    
+    if endcounter==len(players)-1:
+        scores=[]
+        for i in range(len(players)):
+            #get score of each player
+            scores.append(players[i].get_score())   
+        #need to consider who finished the round
+        #if not the unique lowest (and positive) finishs first then score of the finisher is doubled
+        #not_finisher controll parameter to avoid several doublings
+        not_finisher=False
+        if scores[finisher]>0:
+            for i in range(len(players)):       
+                if i!=finisher and not_finisher==False:
+                    if scores[finisher]>=scores[i]:
+                        scores[finisher]*=2
+                        not_finisher=True
+        end_score=scores.copy()                
+        if silent==False:
+            print("score of round is "+str(scores))
+
+#correct besides that word and vanishing appear one later than wanted                    
+
 
 pile_closed=Pile('create_closed',False)
 pile_open=Pile('create_open',pile_closed)
@@ -1250,9 +1303,16 @@ alpha=Player("alpha",'human',1,pile_closed)
 beta=Player("beta",'human',1,pile_closed) 
 card_c=None
 card=-1
+in_play=True
+silent=False
+endcounter=0
+end_score=[0,0]
+finisher=0
 players=[alpha,beta]
 player=who_starts(True,players,None,silent=True)
 print(player.name)
+#index of starter player
+counter=players.index(player)
 if len(players)==2:
     frame = simplegui.create_frame("Skyjo", 290+280*(1), 100+3*50+30) 
 if abs(len(players)-3.5)==0.5:
@@ -1262,7 +1322,7 @@ if abs(len(players)-5.5)==0.5:
 if abs(len(players)-7.5)==0.5:
     frame = simplegui.create_frame("Skyjo", 290+280*(3)+20, 100+3*50*2+60)  
 frame.set_canvas_background("White")
-frame.add_button("start", hit_start, 200)    
+frame.add_button("new_game", new_game, 200)    
 frame.add_button("discard", discard_yes, 200)
 frame.add_button("keep", discard_no, 200)
 take_open=False
