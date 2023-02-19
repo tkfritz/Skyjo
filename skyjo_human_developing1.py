@@ -6,6 +6,7 @@ import time
 #new ones
 import pandas as pd
 from xgboost import XGBRegressor
+import os
 
 
 #cards of the game
@@ -1164,8 +1165,7 @@ level1_2players_model.load_model("xgb_model2.json")
 #print(names,nature,levels)
 #winner=skyjo_game(names,nature,levels,0,False,False)
 
-#now human mode developement
-#for restart (should be full game at some point)
+#something seems wrong here, too many 3 in a row? or chance? 
 def new_game():
     global mousepos, take_open, discard, player, canvas, card_c, step, card, in_play, counter, endcounter, end_score, finisher, players, names, mode, level, silent
     pile_closed=Pile('create_closed',False)
@@ -1182,11 +1182,9 @@ def new_game():
     players=[alpha,beta]
     end_score=[]
     for i in range(len(players)):
-        end_score.append(0)
-    
+        end_score.append(0)    
     player=who_starts(True,players,None,silent=True)
     counter=players.index(player)
-    print(player.name)
 
 def discard_yes():
     global step,discard
@@ -1204,7 +1202,7 @@ def discard_no():
 
 def mouseclick(pos):
     #card_c is just for display not actually used 
-    global mousepos, take_open, discard, player, canvas, card_c, step, card, in_play, counter, endcounter, end_score, finisher, players, silent,numeric, output, file_name
+    global mousepos, take_open, discard, player, canvas, card_c, step, card, in_play, counter, endcounter, end_score, finisher, players, silent,numeric, output
     #if game is going one
     if sum(np.abs(end_score))==0:
        #only for human
@@ -1312,6 +1310,13 @@ def mouseclick(pos):
                 res=reorder_players(num3[0,i],scores)
                 #pass to array
                 num3[len(num2)+1:len(num2)+len(scores)+1,i]=res   
+            myPath='/home/tobias/ml-testing/games/skyjo'
+            length=len([f for f in os.listdir(myPath) 
+                if f.startswith('human_computer1_') and os.path.isfile(os.path.join(myPath, f))])
+            if length<99:
+                file_name="human_computer1_0"+str(length+1)+".txt"
+            if length>=99:
+                file_name="human_computer1_"+str(length+1)+".txt"                
             np.savetxt(file_name,num3)
         #end the game     
         end_score=scores.copy()     
@@ -1340,7 +1345,8 @@ in_play=True
 endcounter=0
 end_score=[]
 numeric=[]
-file_name='human_computer1_003.txt'
+
+
 for i in range(len(players)):
     end_score.append(0)
 finisher=0
