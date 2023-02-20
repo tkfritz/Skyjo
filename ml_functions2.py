@@ -10,11 +10,18 @@ import simpleguitk as simplegui
 from xgboost import XGBRegressor
 
 #other function needed for it 
-from skyjo_functions2 import *
+#upwards compatible
+from skyjo_functions4 import *
+
+#file needed to run
+#models
+level1_2players_columns=np.loadtxt("xgb_model1_column2.txt")
+level1_2players_model = XGBRegressor()
+level1_2players_model.load_model("xgb_model2.json")
 
 def round_for_ml(names,nature,levels,selected_features,nn,column):
     for i in range(nn):
-        if i%1000==0:
+        if i%4==0:
             #print sometimes
             print("case "+str(i))
         scores,turns,last_player,numeric=skyjo_round(names,nature,levels,0,True,True,True) 
