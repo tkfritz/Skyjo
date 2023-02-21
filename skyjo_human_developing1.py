@@ -793,6 +793,8 @@ def turn(player,players,pile,discarded,silent=True,output=False):
 
 
 def allowed_modes(names,nature,levels):
+    #list of allowed natures
+    nature_list = ['computer','human']    
     #list of allowed computer level for 2 players
     #less implemented for more players
     comp_level_list2 = [1,0,-1,-2,-3]
@@ -831,9 +833,9 @@ def allowed_modes(names,nature,levels):
             #for human   
             elif nature[i]=='human' and any(levels[i] in human_level_list for item in human_level_list)==False:
                 allowed=False
-            #rest does not exist
-            else:
-                allowed=False                
+            #rest does not exist      
+            elif  all(nature[i] in nature_list for item in nature_list)==False:
+                allowed=False                     
     return allowed             
 
 #parameters index of acting player of a turn, and the result of the players (some kind of score)
@@ -1167,12 +1169,13 @@ level1_2players_model.load_model("xgb_model2.json")
 
 #something seems wrong here, too many 3 in a row? or chance? 
 def new_game():
-    global mousepos, take_open, discard, player, canvas, card_c, step, card, in_play, counter, endcounter, end_score, finisher, players, names, mode, level, silent
+    global mousepos, take_open, discard, player, canvas, card_c, step, card, in_play, counter, endcounter, end_score, finisher, players, names, mode, level, silent,numeric
     pile_closed=Pile('create_closed',False)
     pile_open=Pile('create_open',pile_closed)
     #modes should be the same as in the overall game 
     alpha=Player(names[0],mode[0],level[0],pile_closed)
     beta=Player(names[1],mode[1],level[1],pile_closed) 
+    players=[alpha,beta]
     card_c=None
     card=-1
     in_play=True
@@ -1181,6 +1184,7 @@ def new_game():
     step=0
     players=[alpha,beta]
     end_score=[]
+    numeric=[]
     for i in range(len(players)):
         end_score.append(0)    
     player=who_starts(True,players,None,silent=True)
@@ -1322,8 +1326,7 @@ def mouseclick(pos):
         end_score=scores.copy()     
         if silent==False:
             print("score of round is "+str(scores))
-
-#correct besides that word and vanishing appear one later than wanted                    
+                 
 
 #define players
 names=('You','Computer')
@@ -1354,7 +1357,6 @@ take_open=False
 step=0
 output=True
 
-#prints in terminal? 
 silent=True
 
 player=who_starts(True,players,None,silent=silent)
