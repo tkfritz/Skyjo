@@ -961,7 +961,10 @@ def skyjo_round(names,nature,levels,pause,first_round,silent=True,output=False):
                     print("closed pile has "+str(len(pile_closed.list_cards))+" cards")
         if silent==False:
             print(str(counter-idx+1)+" turns were made")            
-  
+        #check whether cards need to vanished before counting
+        for i in range(len(players)):
+            for j in range(4):
+                card_needs_to_vanish=vanish_check(player,silent=silent)
         #get score of round, list        
         scores=[]
         for i in range(len(players)):
@@ -1154,10 +1157,6 @@ def draw(canvas):
                     else:
                         canvas.draw_text(players[i].name+" "+str(end_score[i]),(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')  
                         
-#for level 1 computer needed                     
-level1_2players_columns=np.loadtxt("xgb_model1_column2.txt")
-level1_2players_model = XGBRegressor()
-level1_2players_model.load_model("xgb_model2.json")
 
 #play a game for computer 
 
@@ -1169,7 +1168,7 @@ level1_2players_model.load_model("xgb_model2.json")
 
 #something seems wrong here, too many 3 in a row? or chance? 
 def new_game():
-    global mousepos, take_open, discard, player, canvas, card_c, step, card, in_play, counter, endcounter, end_score, finisher, players, names, mode, level, silent,numeric
+    global mousepos,player, canvas, card_c, step, in_play, counter, endcounter, end_score, finisher, players, names, mode, level, silent,numeric, discard, take_open
     pile_closed=Pile('create_closed',False)
     pile_open=Pile('create_open',pile_closed)
     #modes should be the same as in the overall game 
@@ -1206,7 +1205,7 @@ def discard_no():
 
 def mouseclick(pos):
     #card_c is just for display not actually used 
-    global mousepos, take_open, discard, player, canvas, card_c, step, card, in_play, counter, endcounter, end_score, finisher, players, silent,numeric, output
+    global mousepos,player, canvas, card_c, step,  in_play, counter, endcounter, end_score, finisher, players, silent,numeric, output, discard, take_open
     #if game is going one
     if sum(np.abs(end_score))==0:
        #only for human
@@ -1288,6 +1287,9 @@ def mouseclick(pos):
             cards=players[i].get_all_cards()
             for j in range(len(cards)):
                 players[i].list_cards[cards[j]].set_state(True)
+            #check for vanishing, 4 times done since only one round is doen automatically 
+            for j in range(4):
+                card_needs_to_vanish=vanish_check(player,silent=silent)
         scores=[]
         for i in range(len(players)):
             #get score of each player
@@ -1327,8 +1329,12 @@ def mouseclick(pos):
         if silent==False:
             print("score of round is "+str(scores))
                  
+#for level 1 computer needed                     
+level1_2players_columns=np.loadtxt("xgb_model1_column2.txt")
+level1_2players_model = XGBRegressor()
+level1_2players_model.load_model("xgb_model2.json")
 
-#define players
+#define player parameters
 names=('You','Computer')
 mode=('human','computer')
 level=(1,1)
@@ -1339,38 +1345,34 @@ pile_open=Pile('create_open',pile_closed)
 alpha=Player(names[0],mode[0],level[0],pile_closed)
 beta=Player(names[1],mode[1],level[1],pile_closed) 
 players=[alpha,beta]
-#in play card just for visulaization 
+#globals
+#in play card just for visualization 
 card_c=None
-#chossen card dummy 
-card=-1
 #play parameter
 in_play=True
 endcounter=0
 end_score=[]
 numeric=[]
-
+discard=False
+take_open=True
 
 for i in range(len(players)):
     end_score.append(0)
 finisher=0
-take_open=False
 step=0
 output=True
-
 silent=True
 
 player=who_starts(True,players,None,silent=silent)
-if silent==False:
-    print(player.name+" starts")
 #index of starter player
 counter=players.index(player)
-if len(players)==2:
+if len(names)==2:
     frame = simplegui.create_frame("Skyjo", 290+280*(1), 100+3*50+30) 
-if abs(len(players)-3.5)==0.5:
+if abs(len(names)-3.5)==0.5:
     frame = simplegui.create_frame("Skyjo", 290+280*(1), 100+3*50*2+60)
-if abs(len(players)-5.5)==0.5:
+if abs(len(names)-5.5)==0.5:
     frame = simplegui.create_frame("Skyjo", 290+280*(2)+10, 100+3*50*2+60)    
-if abs(len(players)-7.5)==0.5:
+if abs(len(names)-7.5)==0.5:
     frame = simplegui.create_frame("Skyjo", 290+280*(3)+20, 100+3*50*2+60)  
 frame.set_canvas_background("White")
 frame.add_button("new game", new_game, 200)    
