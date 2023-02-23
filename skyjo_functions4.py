@@ -6,11 +6,12 @@ import time
 #new ones
 import pandas as pd
 from xgboost import XGBRegressor
-#for accessing files 
 import os
 
-#file needed to run
-#models
+###globals
+global card_c,in_play,pile_closed,pile_open,players
+                 
+#for level 1 computer needed                     
 level1_2players_columns=np.loadtxt("xgb_model1_column2.txt")
 level1_2players_model = XGBRegressor()
 level1_2players_model.load_model("xgb_model2.json")
@@ -77,7 +78,6 @@ class Card:
             value=20
         return value            
     
-
     
 #pile of cards can be open or closed, only top most accessable
 class Pile:
@@ -175,7 +175,6 @@ class Pile:
                     ar[self.list_cards[i].number+3]+=1
         
         return ar         
-
 
 #A Card Position can be empty. I use two lists here for the essential properties, one to check for empty and
 #one which has stored the card. 
@@ -342,8 +341,6 @@ class Player:
                     ar[i]=20
         return ar   
 
-
-
 #function which dtermines who storts
 #parameters: whether is first round of game, player_list, which player ended the last round, 
 #,silent whether the result is printed on screen
@@ -398,8 +395,6 @@ def list_of_array_to_numpy(the_list,int2=True):
         array[i]=the_list[i]
     #transpose it to consistent with previous way below    
     return array.T
-
-
 
 
 #defines actions they are either done or just simulated(=explored to see which is best)
@@ -457,11 +452,11 @@ def actions(player,players,pile,discarded,take_open, discard,silent=True,simulat
                 if player.level>=-3 and player.level<=0:
                     #index of selected card
                     selected=[random.choice(existing)]
-                if player.level>=1 and player.level<=2 and simulated==False:
+                if player.level>=1 and simulated==False:
                     #card directly this it uses the direct index
                     selected=[card]
                 #for simulated this one currently one implemented    
-                if player.level>=1 and player.level<=2 and simulated==True:
+                if player.level>=1 and simulated==True:
                     selected=existing.copy()
                 #for human    
             if player.level==1 and player.mode=='human':
@@ -516,9 +511,9 @@ def actions(player,players,pile,discarded,take_open, discard,silent=True,simulat
                 #all implemented are random               
                 if player.level<=0 and player.level>=-3:
                      selected=[random.choice(closed)] 
-                if  player.level>=1 and player.level<=2  and simulated==False:
+                if player.level>=1 and simulated==False:
                     selected=[card]        
-                if  player.level>=1 and player.level<=2  and simulated==True:
+                if player.level>=1 and simulated==True:
                     selected=closed.copy()         
                                 #for human    
             if player.level==1 and player.mode=='human':
@@ -569,9 +564,9 @@ def actions(player,players,pile,discarded,take_open, discard,silent=True,simulat
                     #index of selected card
                     selected=[random.choice(existing)]
                 #for simulated this one currently one implemented    
-                if  player.level>=1 and player.level<=2  and simulated==True:
+                if player.level>=1 and simulated==True:
                     selected=existing.copy()
-                if  player.level>=1 and player.level<=2  and simulated==False:
+                if player.level>=1 and simulated==False:
                     selected=[card]   
             #for human    
             if player.level==1 and player.mode=='human':
@@ -628,9 +623,8 @@ def actions(player,players,pile,discarded,take_open, discard,silent=True,simulat
     #only 1D array when not
     if simulated==False:
         return num3    
-
-
-
+    
+    
     
 #name of model, which column to be used, inut file1, index, open_card column, discard column, round_number, silent
 #optional second input file 
@@ -659,14 +653,14 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
     all_scores[0,:input1.shape[1]]=selected.T[:,take_open]
     all_scores[1,:input1.shape[1]]=selected.T[:,discard]
     all_scores[3,:input1.shape[1]]=selected.T[:,index]
-    all_scores[2,:input1.shape[1]]=pred_scores1
     if g_sigma==0:
         all_scores[2,:input1.shape[1]]=pred_scores1
+    #if noise added    
     else:
         for j in range(input1.shape[1]):
             delta=random.gauss(0,g_sigma)
-            all_scores[2,j]=pred_scores1[j]+delta
-    #if second inout exist
+            all_scores[2,j]=pred_scores1[j]+delta    
+    #if second input exist
     if n_inputs==2:
         #weights for card values       
         weight_vec=np.array([5/150,10/150,15/150,10/150,10/150,10/150,10/150,10/150,10/150,10/150,10/150,10/150,10/150,10/150,10/150]) 
@@ -686,19 +680,19 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
             weight_avg=np.dot(pred_scores2,weight_vec)
             #all have same values in selected 0 from same coordinate why
             all_scores[0,input1.shape[1]+k]=selected.T[0,take_open]
-            all_scores[1,input1.shape[1]+k]=selected.T[0,discard]
-            all_scores[3,input1.shape[1]+k]=selected.T[0,index]
+            all_scores[1,input1.shape[1]+k]=selected.T[0,discard]            
+            all_scores[3,input1.shape[1]+k]=selected.T[0,index]   
+            #if no noise added
             if g_sigma==0:
                 all_scores[2,input1.shape[1]+k]=weight_avg
-            #adding gaussian noiseses in case     
+            #else adding gaussian noise
             else:
                 delta=random.gauss(0,g_sigma)
-                all_scores[2,input1.shape[1]+k]=weight_avg+delta
+        all_scores[2,input1.shape[1]+k]=weight_avg+delta            
     #get position of minum (best choice)
     x=np.argmin(all_scores[2])
     if all_scores[0,x]==1 or n_inputs==1:
         if silent==False:
-            print(all_scores[2])
             if all_scores[0,x]==1:
                 print(f"minimum is for using open, and  giving own card {int(all_scores[3,x])}") 
             elif all_scores[0,x]==0 and all_scores[1,x]==0:
@@ -733,8 +727,6 @@ def vanish_check(player,silent=True):
     return card_needs_to_vanish        
 
 
-
-
 #parameters: current player, all players (only needed for numeric output collection and for choosing startegry in some levels, closed_pile, discarded_pile, 
 #Currently implemented mode with levels 0, -1, -2, -3
 def turn(player,players,pile,discarded,silent=True,output=False):
@@ -744,7 +736,6 @@ def turn(player,players,pile,discarded,silent=True,output=False):
     if player.mode=='computer':
         #dictionaries here used level number to: models, column to be used, colomns of open, discard, index of card
         #for 2 players
-        #second option uses the same model but adds some noise
         player_2models={1:level1_2players_model,2:level1_2players_model}
         player_2columns={1:level1_2players_columns,2:level1_2players_columns}
         player_2take_open={1:25,2:25}
@@ -785,7 +776,7 @@ def turn(player,players,pile,discarded,silent=True,output=False):
             if take_open==-1:
                 num1=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=1)
                 take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],1,silent=silent)   
-        #this is the same but adds gaussian noise
+        #this is the same as before but adds gaussian noise
         if player.level==2 and len(players)==2:
             #simulations are done first, taken_open and discard are meaning less here
             num1,num2=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=0)
@@ -795,8 +786,7 @@ def turn(player,players,pile,discarded,silent=True,output=False):
             if take_open==-1:
                 num1=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=1)
                 #gaussian npise here added when deternining best option
-                take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],1,silent=silent,g_sigma=2)   
-                 
+                take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],1,silent=silent,g_sigma=2)                   
     #now action function
     if silent==False:
         print("player "+player.name+" turn")
@@ -832,13 +822,11 @@ def turn(player,players,pile,discarded,silent=True,output=False):
         num2[:len(num)]=num
         num2[len(num)]=card_needs_to_vanish
         return player, players, pile, discarded, num2
-    
-    
-    
+
+
 def allowed_modes(names,nature,levels):
     #list of allowed natures
-    nature_list = ['computer','human']
-    
+    nature_list = ['computer','human']    
     #list of allowed computer level for 2 players
     #less implemented for more players
     comp_level_list2 = [2,1,0,-1,-2,-3]
@@ -876,13 +864,11 @@ def allowed_modes(names,nature,levels):
                 allowed=False                    
             #for human   
             elif nature[i]=='human' and any(levels[i] in human_level_list for item in human_level_list)==False:
-                print(6)
-                allowed=False     
+                allowed=False
+            #rest does not exist      
             elif  all(nature[i] in nature_list for item in nature_list)==False:
-                allowed=False                  
-    return allowed  
-
-  
+                allowed=False                     
+    return allowed             
 
 #parameters index of acting player of a turn, and the result of the players (some kind of score)
 def reorder_players(player,result):
@@ -893,8 +879,7 @@ def reorder_players(player,result):
     for j in range(1,xx):
         #get scores of following players
         array[j]=result[int((j+player)%xx)] 
-    return array 
-
+    return array    
 
 
 #parameters: player names, modes, level (all list of same length), pause per turn (seconds can be zero), 
@@ -1008,7 +993,10 @@ def skyjo_round(names,nature,levels,pause,first_round,silent=True,output=False):
                     print("closed pile has "+str(len(pile_closed.list_cards))+" cards")
         if silent==False:
             print(str(counter-idx+1)+" turns were made")            
-  
+        #check whether cards need to vanished before counting
+        for i in range(len(players)):
+            for j in range(4):
+                card_needs_to_vanish=vanish_check(player,silent=silent)
         #get score of round, list        
         scores=[]
         for i in range(len(players)):
@@ -1041,11 +1029,8 @@ def skyjo_round(names,nature,levels,pause,first_round,silent=True,output=False):
         if output==False:    
             return scores, counter-idx+1, last_player
         else:    
-            return scores, counter-idx+1, last_player, num2    
-        
-        
-
-        
+            return scores, counter-idx+1, last_player, num2        
+       
 #parameters: player names, modes, level (all list of same length),
 #pause length (can be zero) 
 #printing optional 
@@ -1139,8 +1124,6 @@ def skyjo_game(names,nature,levels,pause,silent=True,output=False):
                 #no numeric, output just winner
                 return winner
             
-            
-
 # draw function
 def draw(canvas):
     global pile_open,pile_closed, players,card_b, card_a, step, discard, take_open, player, end_score, player
@@ -1203,17 +1186,26 @@ def draw(canvas):
                     elif players[i]==player and sum(np.abs(end_score))==0: 
                         canvas.draw_text(players[i].name+" turn",(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')                        
                     else:
-                        canvas.draw_text(players[i].name+" "+str(end_score[i]),(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')    
-                        
+                        canvas.draw_text(players[i].name+" "+str(end_score[i]),(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')  
                         
 
+#play a game for computer 
+
+#names=('alpha','beta')
+#nature=('computer','computer')
+#levels=(1,0)
+#print(names,nature,levels)
+#winner=skyjo_game(names,nature,levels,0,False,False)
+
+#something seems wrong here, too many 3 in a row? or chance? 
 def new_game():
-    global mousepos, take_open, discard, player, canvas, card_c, step, card, in_play, counter, endcounter, end_score, finisher, players, names, mode, level, silent
+    global mousepos,player, canvas, card_c, step, in_play, counter, endcounter, end_score, finisher, players, names, mode, level, silent,numeric, discard, take_open
     pile_closed=Pile('create_closed',False)
     pile_open=Pile('create_open',pile_closed)
     #modes should be the same as in the overall game 
     alpha=Player(names[0],mode[0],level[0],pile_closed)
     beta=Player(names[1],mode[1],level[1],pile_closed) 
+    players=[alpha,beta]
     card_c=None
     card=-1
     in_play=True
@@ -1222,6 +1214,7 @@ def new_game():
     step=0
     players=[alpha,beta]
     end_score=[]
+    numeric=[]
     for i in range(len(players)):
         end_score.append(0)    
     player=who_starts(True,players,None,silent=True)
@@ -1243,7 +1236,7 @@ def discard_no():
 
 def mouseclick(pos):
     #card_c is just for display not actually used 
-    global mousepos, take_open, discard, player, canvas, card_c, step, card, in_play, counter, endcounter, end_score, finisher, players, silent,numeric, output
+    global mousepos,player, canvas, card_c, step,  in_play, counter, endcounter, end_score, finisher, players, silent,numeric, output, discard, take_open
     #if game is going one
     if sum(np.abs(end_score))==0:
        #only for human
@@ -1325,6 +1318,9 @@ def mouseclick(pos):
             cards=players[i].get_all_cards()
             for j in range(len(cards)):
                 players[i].list_cards[cards[j]].set_state(True)
+            #check for vanishing, 4 times done since only one round is doen automatically 
+            for j in range(4):
+                card_needs_to_vanish=vanish_check(player,silent=silent)
         scores=[]
         for i in range(len(players)):
             #get score of each player
@@ -1362,4 +1358,4 @@ def mouseclick(pos):
         #end the game     
         end_score=scores.copy()     
         if silent==False:
-            print("score of round is "+str(scores))                        
+            print("score of round is "+str(scores))        
