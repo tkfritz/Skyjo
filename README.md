@@ -1,6 +1,6 @@
-## Skyjo
+### Skyjo
 
-In this directory I develope and implement the card game skyjo with python to play with a computer. 
+In this directory I develop and implement the card game skyjo with python to play with a computer. 
 
 # Playing Skyjo
 
@@ -11,7 +11,7 @@ skyjo_human_developing1.py
 xgb_model1_column2.txt
 xgb_model2.json
 
-The computer needs to have the standard python libraries (check what is importaned in the top of skyjo_human_developing1.py)
+The computer needs to have the standard python libraries (check what is imported in the top of skyjo_human_developing1.py)
 and also  xgboost and simpleguitk.
 
 Then just run python skyjo_human_developing1.py
