@@ -1318,11 +1318,13 @@ def mouseclick(pos):
                 num3[len(num2)+1:len(num2)+len(scores)+1,i]=res   
             myPath='/home/tobias/ml-testing/games/skyjo'
             length=len([f for f in os.listdir(myPath) 
-                if f.startswith('human_computer1_') and os.path.isfile(os.path.join(myPath, f))])
-            if length<99:
-                file_name="human_computer1_0"+str(length+1)+".txt"
+                if f.startswith('human_computer1b_') and os.path.isfile(os.path.join(myPath, f))])
+            if length<9:
+                file_name="human_computer1b_00"+str(length+1)+".txt"            
+            if length<99 and length>8:
+                file_name="human_computer1b_0"+str(length+1)+".txt"
             if length>=99:
-                file_name="human_computer1_"+str(length+1)+".txt"                
+                file_name="human_computer1b_"+str(length+1)+".txt"                
             np.savetxt(file_name,num3)
         #end the game     
         end_score=scores.copy()     
