@@ -8,14 +8,15 @@ import pandas as pd
 from xgboost import XGBRegressor
 import os
 
-###globals
-global card_c,in_play,pile_closed,pile_open,players
+
                  
 #for level 1 computer needed                     
 level1_2players_columns=np.loadtxt("xgb_model1_column2.txt")
 level1_2players_model = XGBRegressor()
 level1_2players_model.load_model("xgb_model2.json")
-
+#level 3
+level3_2players_model = XGBRegressor()
+level3_2players_model.load_model("xgb_model3.json")
 
 #cards of the game
 class Card:
@@ -688,7 +689,7 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
             #else adding gaussian noise
             else:
                 delta=random.gauss(0,g_sigma)
-        all_scores[2,input1.shape[1]+k]=weight_avg+delta            
+                all_scores[2,input1.shape[1]+k]=weight_avg+delta            
     #get position of minum (best choice)
     x=np.argmin(all_scores[2])
     if all_scores[0,x]==1 or n_inputs==1:
@@ -736,11 +737,11 @@ def turn(player,players,pile,discarded,silent=True,output=False):
     if player.mode=='computer':
         #dictionaries here used level number to: models, column to be used, colomns of open, discard, index of card
         #for 2 players
-        player_2models={1:level1_2players_model,2:level1_2players_model}
-        player_2columns={1:level1_2players_columns,2:level1_2players_columns}
-        player_2take_open={1:25,2:25}
-        player_2discard={1:26,2:26}
-        player_2index={1:28,2:28}        
+        player_2models={1:level1_2players_model,2:level1_2players_model,3:level3_2players_model,4:level3_2players_model}
+        player_2columns={1:level1_2players_columns,2:level1_2players_columns,3:level1_2players_columns,4:level1_2players_columns}
+        player_2take_open={1:25,2:25,3:25,4:25}
+        player_2discard={1:26,2:26,3:26,4:26}
+        player_2index={1:28,2:28,3:28,4:28}        
         #in level 0 random 50% choice of action
         if player.level==0:
             r_number1=random.random()
@@ -768,25 +769,26 @@ def turn(player,players,pile,discarded,silent=True,output=False):
         if player.level==-2:
                 discard=True
         #first level which implements machine learning   is implemented  
-        if player.level==1 and len(players)==2:
-            #simulations are done first, taken_open and discard are meaning less here
-            num1,num2=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=0)
-            take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],2,silent=silent,input2=num2)
-            #round 2 if best option is closed
-            if take_open==-1:
-                num1=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=1)
-                take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],1,silent=silent)   
-        #this is the same as before but adds gaussian noise
-        if player.level==2 and len(players)==2:
-            #simulations are done first, taken_open and discard are meaning less here
-            num1,num2=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=0)
-            #gassuan noise added in determoine best option
-            take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],2,silent=silent,input2=num2,g_sigma=2)
-            #round 2 if best option is closed
-            if take_open==-1:
-                num1=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=1)
-                #gaussian npise here added when deternining best option
-                take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],1,silent=silent,g_sigma=2)                   
+        if len(players)==2:
+            if player.level==1 or player.level==3:
+                #simulations are done first, taken_open and discard are meaning less here
+                num1,num2=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=0)
+                take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],2,silent=silent,input2=num2)
+                #round 2 if best option is closed
+                if take_open==-1:
+                    num1=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=1)
+                    take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],1,silent=silent)   
+            #this is the same as before but adds gaussian noise
+            if player.level==2 or player.level==4:
+                #simulations are done first, taken_open and discard are meaning less here
+                num1,num2=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=0)
+                #gassuan noise added in determoine best option
+                take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],2,silent=silent,input2=num2,g_sigma=2)
+                #round 2 if best option is closed
+                if take_open==-1:
+                    num1=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=1)
+                    #gaussian npise here added when deternining best option
+                    take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],1,silent=silent,g_sigma=2)                   
     #now action function
     if silent==False:
         print("player "+player.name+" turn")
@@ -829,7 +831,7 @@ def allowed_modes(names,nature,levels):
     nature_list = ['computer','human']    
     #list of allowed computer level for 2 players
     #less implemented for more players
-    comp_level_list2 = [2,1,0,-1,-2,-3]
+    comp_level_list2 = [4,3,2,1,0,-1,-2,-3]
     comp_level_list3 = [0,-1,-2,-3]
     comp_level_list4 = [0,-1,-2,-3]
     comp_level_list5 = [0,-1,-2,-3]
@@ -1189,15 +1191,6 @@ def draw(canvas):
                         canvas.draw_text(players[i].name+" "+str(end_score[i]),(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')  
                         
 
-#play a game for computer 
-
-#names=('alpha','beta')
-#nature=('computer','computer')
-#levels=(1,0)
-#print(names,nature,levels)
-#winner=skyjo_game(names,nature,levels,0,False,False)
-
-#something seems wrong here, too many 3 in a row? or chance? 
 def new_game():
     global mousepos,player, canvas, card_c, step, in_play, counter, endcounter, end_score, finisher, players, names, mode, level, silent,numeric, discard, take_open
     pile_closed=Pile('create_closed',False)
@@ -1292,11 +1285,13 @@ def mouseclick(pos):
             
         if player.mode=='computer': 
             #two clicks needed to advance computer 
-            x, z, t, u, num2=turn(player,players,pile_open,pile_closed,silent=silent,output=True)
-            numeric.append(num2)
-            counter+=1
             if in_play==False:
                 endcounter+=1
+            x, z, t, u, num2=turn(player,players,pile_open,pile_closed,silent=silent,output=True)
+            if in_play==True:
+                finisher=counter%len(players)
+            numeric.append(num2)
+            counter+=1
         #refill closed pile if needed 
         pile_closed.refill(pile_open)
         #check whether there are still closed cards 
@@ -1305,8 +1300,10 @@ def mouseclick(pos):
         if len(closed)==0:
             #finisher needed for score
             if in_play==True:
-                #counter -1 because enlarged before this is tested 
-                finisher=(counter-1)%len(players)
+                #changed could be simpler but works 
+                for j in range(len(players)):
+                    if player==players[j]:
+                        finisher=j                
             in_play=False
             if silent==False:        
                 print("player "+player.name+" opened all cards")   
@@ -1348,14 +1345,23 @@ def mouseclick(pos):
                 #pass to array
                 num3[len(num2)+1:len(num2)+len(scores)+1,i]=res   
             myPath='/home/tobias/ml-testing/games/skyjo'
-            length=len([f for f in os.listdir(myPath) 
-                if f.startswith('human_computer1_') and os.path.isfile(os.path.join(myPath, f))])
-            if length<99:
-                file_name="human_computer1_0"+str(length+1)+".txt"
-            if length>=99:
-                file_name="human_computer1_"+str(length+1)+".txt"                
-            np.savetxt(file_name,num3)
+            #save for human comupter mode
+            if len(players)==2 and players[0].mode=='human' and players[1].mode=='computer':
+                #get computer level and insert in string
+                name_string='human_computer'+str(players[1].level)+'_'
+                
+                length=len([f for f in os.listdir(myPath) 
+                    if f.startswith(name_string) and os.path.isfile(os.path.join(myPath, f))])
+                if length<9:
+                    file_name=name_string+"00"+str(length+1)+".txt"                
+                if length<99 and length>8:
+                    file_name=name_string+"0"+str(length+1)+".txt"
+                if length>=99:
+                    file_name=name_string+str(length+1)+".txt"                
+                np.savetxt(file_name,num3)
         #end the game     
         end_score=scores.copy()     
         if silent==False:
             print("score of round is "+str(scores))        
+
+#some problem with running mode 4 
