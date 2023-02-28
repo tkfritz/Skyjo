@@ -228,7 +228,7 @@ class Player:
             rang=list(range(12))
             random.shuffle(rang)
             self.list_cards[rang[0]].set_state(True)
-            self.list_cards[rang[1]].set_state(True) 
+            self.list_cards[rang[1]].set_state(True)  
     #printing basic player properties        
     def __str__(self):
         return "Player "+self.name+" is a "+self.mode+" in level "+str(self.level)+"."
@@ -1151,8 +1151,17 @@ def draw(canvas):
     elif player.mode=='computer' and sum(np.abs(end_score))==0:
         canvas.draw_text("Click anywhere for computer",pos_text,15,'Black')
     else:
-        canvas.draw_text(players[np.argmin(end_score)].name+" won",pos_text,15,'Black')
-        
+        if max(tot_score)>=100:
+            if tot_score[0]!=tot_score[1]:
+                canvas.draw_text(players[np.argmin(tot_score)].name+" won. New game?",pos_text,15,'Black')
+            else:
+                canvas.draw_text("Players tied. New game?",pos_text,15,'Black')    
+        else:
+            if tot_score[0]!=tot_score[1]:
+                canvas.draw_text(players[np.argmin(tot_score)].name+" leads.  New round?",pos_text,15,'Black')
+            else:
+                canvas.draw_text("Players tie. New round?",pos_text,15,'Black') 
+                
     if card_c!=None:
         card_c.draw(canvas)
     #if card_a!=None: not done currently
@@ -1174,7 +1183,7 @@ def draw(canvas):
                         #indicate whose turn it is
                         canvas.draw_text(players[i].name+" turn",(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')   
                     else:
-                        canvas.draw_text(players[i].name+" "+str(end_score[i]),(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')                         
+                        canvas.draw_text(players[i].name+" "+str(tot_score[i]),(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')                         
                 if len(players)>2:
                     #paramter how to structure the layout
                     x=round(len(players)/2)
@@ -1188,31 +1197,67 @@ def draw(canvas):
                     elif players[i]==player and sum(np.abs(end_score))==0: 
                         canvas.draw_text(players[i].name+" turn",(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')                        
                     else:
-                        canvas.draw_text(players[i].name+" "+str(end_score[i]),(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')  
+                        canvas.draw_text(players[i].name+" "+str(tot_score[i]),(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')  
                         
 
 def new_game():
-    global mousepos,player, canvas, card_c, step, in_play, counter, endcounter, end_score, finisher, players, names, mode, level, silent,numeric, discard, take_open
-    pile_closed=Pile('create_closed',False)
-    pile_open=Pile('create_open',pile_closed)
-    #modes should be the same as in the overall game 
-    alpha=Player(names[0],mode[0],level[0],pile_closed)
-    beta=Player(names[1],mode[1],level[1],pile_closed) 
-    players=[alpha,beta]
-    card_c=None
-    card=-1
-    in_play=True
-    endcounter=0
-    take_open=False
-    step=0
-    players=[alpha,beta]
-    end_score=[]
-    numeric=[]
-    for i in range(len(players)):
-        end_score.append(0)    
-    player=who_starts(True,players,None,silent=True)
-    counter=players.index(player)
+    global mousepos,player, canvas, card_c, step, in_play, counter, endcounter, end_score, finisher, players, names, mode, level, silent,numeric, discard, take_open, tot_score, listnum, in_game, in_round
+    if in_game==False:
+        pile_closed=Pile('create_closed',False)
+        pile_open=Pile('create_open',pile_closed)
+        alpha=Player(names[0],mode[0],level[0],pile_closed)
+        beta=Player(names[1],mode[1],level[1],pile_closed) 
+        players=[alpha,beta]
+        #in play card just for visualization 
+        card_c=None
+        #play parameter
+        in_play=True
+        endcounter=0
+        end_score=[]
+        tot_score=[]
+        numeric=[]
+        discard=False
+        take_open=True
+        listnum=[]
+        in_game=True
+        in_round=True
+        for i in range(len(players)):
+            end_score.append(0)
+            tot_score.append(0)
+        finisher=0
+        step=0
+        output=True
+        silent=True
+        player=who_starts(True,players,None,silent=silent)
+        #index of starter player
+        counter=players.index(player)
 
+def new_round():
+    global mousepos,player, canvas, card_c, step, in_play, counter, endcounter, end_score, finisher, players, names, mode, level, silent,numeric, discard, take_open, tot_score, in_game, in_round
+    if in_game==True:
+        pile_closed=Pile('create_closed',False)
+        pile_open=Pile('create_open',pile_closed)
+        #restart players
+        for i in range(len(players)):
+            players[i].restart(pile_closed)
+        card_c=None
+        card=-1
+        in_play=True
+        in_round=True
+        endcounter=0
+        take_open=False
+        step=0
+        end_score=[]
+        numeric=[]
+        for i in range(len(players)):
+            end_score.append(0)
+        #player=who_starts(True,players,None,silent=True)
+        #new starter implemenation for further rounds or could change to use function again 
+        counter=players.index(player)
+        #player advance by one
+        counter=(counter+1)%2
+        player=players[counter]
+         
 def discard_yes():
     global step,discard
     if step==1:
@@ -1229,7 +1274,7 @@ def discard_no():
 
 def mouseclick(pos):
     #card_c is just for display not actually used 
-    global mousepos,player, canvas, card_c, step,  in_play, counter, endcounter, end_score, finisher, players, silent,numeric, output, discard, take_open
+    global mousepos,player, canvas, card_c, step,  in_play, counter, endcounter, end_score, finisher, players, silent,numeric, output, discard, take_open, tot_score, listnum, in_game, in_round
     #if game is going one
     if sum(np.abs(end_score))==0:
        #only for human
@@ -1282,9 +1327,8 @@ def mouseclick(pos):
             num2[len(num)]=card_needs_to_vanish
             numeric.append(num2)
             step=0
-            
         if player.mode=='computer': 
-            #two clicks needed to advance computer 
+            #one clicks needed to advance computer 
             if in_play==False:
                 endcounter+=1
             x, z, t, u, num2=turn(player,players,pile_open,pile_closed,silent=silent,output=True)
@@ -1292,18 +1336,18 @@ def mouseclick(pos):
                 finisher=counter%len(players)
             numeric.append(num2)
             counter+=1
+
         #refill closed pile if needed 
         pile_closed.refill(pile_open)
         #check whether there are still closed cards 
         closed=player.get_all_closed()
         #if not play ends for this player and marker is set to not in_play
         if len(closed)==0:
-            #finisher needed for score
             if in_play==True:
-                #changed could be simpler but works 
+                #changed
                 for j in range(len(players)):
                     if player==players[j]:
-                        finisher=j                
+                        finisher=j
             in_play=False
             if silent==False:        
                 print("player "+player.name+" opened all cards")   
@@ -1331,7 +1375,7 @@ def mouseclick(pos):
                 if i!=finisher and not_finisher==False:
                     if scores[finisher]>=scores[i]:
                         scores[finisher]*=2
-                        not_finisher=True
+                        not_finisher=True              
         if output==True and sum(np.abs(end_score))==0: 
             #output mostly the output of the round, plus round number and 
             #at the end the scores in the same order as players in that turn
@@ -1344,11 +1388,39 @@ def mouseclick(pos):
                 res=reorder_players(num3[0,i],scores)
                 #pass to array
                 num3[len(num2)+1:len(num2)+len(scores)+1,i]=res   
+            listnum.append(num3)   
             myPath='/home/tobias/ml-testing/games/skyjo'
-            #save for human comupter mode
-            if len(players)==2 and players[0].mode=='human' and players[1].mode=='computer':
+            if in_game==True and in_round==True:
+                in_round=False    
+                end_score=scores.copy()
+                for i in range(len(tot_score)):
+                    tot_score[i]+=end_score[i] 
+            if in_game==True and silent==False:
+                print("Total score is "+str(tot_score))
+            if len(players)==2 and players[0].mode=='human' and players[1].mode=='computer' and max(tot_score)>=100:
                 #get computer level and insert in string
-                name_string='human_computer'+str(players[1].level)+'_'
+                in_game=False
+                name_string='human_computer'+str(players[1].level)+'_g'
+                row_counter=0
+                for i in range(len(listnum)):
+                    row_counter+=listnum[i].shape[1]
+                #final numeric output
+                #include besides propagate of round also round number, and reordered to player winner vector 
+                final=np.zeros((listnum[0].shape[0]+1+len(players),row_counter),int)
+                row_counter=0
+                for i in range(len(listnum)):
+                    final[0:listnum[0].shape[0],row_counter:row_counter+listnum[i].shape[1]]=listnum[i]
+                    for j in range(listnum[i].shape[1]):
+                        final[listnum[0].shape[0],row_counter+j]=i
+                        #reorder to the winner to the player order
+                        winner=[]    
+                        for k in range(len(players)):
+                            if tot_score[k]==min(tot_score):
+                                winner.append(1)
+                            else:
+                                winner.append(0)
+                        final[listnum[0].shape[0]+1:listnum[0].shape[0]+len(players)+1,row_counter+j]=reorder_players(final[0,row_counter+j],winner) 
+                    row_counter+=listnum[i].shape[1] 
                 
                 length=len([f for f in os.listdir(myPath) 
                     if f.startswith(name_string) and os.path.isfile(os.path.join(myPath, f))])
@@ -1358,10 +1430,4 @@ def mouseclick(pos):
                     file_name=name_string+"0"+str(length+1)+".txt"
                 if length>=99:
                     file_name=name_string+str(length+1)+".txt"                
-                np.savetxt(file_name,num3)
-        #end the game     
-        end_score=scores.copy()     
-        if silent==False:
-            print("score of round is "+str(scores))        
-
-#some problem with running mode 4 
+                np.savetxt(file_name,final)            
