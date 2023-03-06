@@ -1128,85 +1128,100 @@ def skyjo_game(names,nature,levels,pause,silent=True,output=False):
             
 # draw function
 def draw(canvas):
-    global pile_open,pile_closed, players,card_b, card_a, step, discard, take_open, player, end_score, player, tot_score
-    #display the top most card
-    p_open=pile_open.list_cards[-1]
-    p_closed=pile_closed.list_cards[-1]
-    # test to make sure that card.draw works
-    p_open.draw(canvas)
-    p_closed.draw(canvas)
-    pos_text=[293,45]
-    #if not ended 
-    if sum(np.abs(end_score))==0 and player.mode=='human':
-        #instructions what to do 
-        if step==0:
-            canvas.draw_text("Choose open or closed pile",pos_text,15,'Black')
-        if step==1:
-            canvas.draw_text("Discard or keep?",pos_text,15,'Black')
-        if step==2:
-            if discard==True and take_open==False:
-               canvas.draw_text("Choose closed card",pos_text,15,'Black')
-            else:    
-               canvas.draw_text("Choose any card",pos_text,15,'Black')
-    elif player.mode=='computer' and sum(np.abs(end_score))==0:
-        canvas.draw_text("Click anywhere for computer",pos_text,15,'Black')
+    global pile_open,pile_closed, players,card_b, card_a, step, discard, take_open, player, end_score, player, tot_score, start_screen
+    if start_screen==True:
+        #start text which explain the basic rules
+        canvas.draw_text("Skyjo",[200,30],25,'Blue')
+        canvas.draw_text("The aim of the game is to finish with the least number of points. When there are",[5,55],10,'Black')
+        canvas.draw_text("three equal values in a column, they all vanish. When one player finishes opening",[5,67],10,'Black')
+        canvas.draw_text("all cards, the others may take one more card. Then the numerical values of the",[5,79],10,'Black')
+        canvas.draw_text("cards are added together. Caution, when the first player to finish does not have",[5,91],10,'Black')
+        canvas.draw_text("the smallest number of points his points are then doubled. This is one round.",[5,103],10,'Black')
+        canvas.draw_text("Several rounds are played until one player has at least 100 points. The player",[5,115],10,'Black')
+        canvas.draw_text("with the smallest number of points wins. The detailed actions are explained later.",[5,127],10,'Black')
+        canvas.draw_text("Start Game?",[180,155],17,'Red')
     else:
-        if max(tot_score)>=100:
-            if tot_score[0]!=tot_score[1]:
-                canvas.draw_text(players[np.argmin(tot_score)].name+" won. New game?",pos_text,15,'Black')
-            else:
-                canvas.draw_text("Players tied. New game?",pos_text,15,'Black')    
+        #display the top most cards
+        p_open=pile_open.list_cards[-1]
+        p_closed=pile_closed.list_cards[-1]
+        p_open.draw(canvas)
+        p_closed.draw(canvas)
+        pos_text=[293,45]
+        #if not ended 
+        if sum(np.abs(end_score))==0 and player.mode=='human':
+            #text instructions what to do for human 
+            if step==0:
+                canvas.draw_text("Choose face down or up pile",pos_text,15,'Black')
+            if step==1:
+                canvas.draw_text("Discard or keep?",pos_text,15,'Black')
+            if step==2:
+               if discard==True and take_open==False:
+                   canvas.draw_text("Choose face down card",pos_text,15,'Black')
+               else:    
+                   canvas.draw_text("Choose any card",pos_text,15,'Black')
+        elif player.mode=='computer' and sum(np.abs(end_score))==0:
+            canvas.draw_text("Click anywhere for computer",pos_text,15,'Black')
         else:
-            if tot_score[0]!=tot_score[1]:
-                canvas.draw_text(players[np.argmin(tot_score)].name+" leads.  New round?",pos_text,15,'Black')
+            #results and instructions at the end of game and round
+            if max(tot_score)>=100:
+                if tot_score[0]!=tot_score[1]:
+                    canvas.draw_text(players[np.argmin(tot_score)].name+" won. Start new game?",pos_text,15,'Black')
+                else:
+                    canvas.draw_text("Players tied. Start new game?",pos_text,15,'Black')    
             else:
-                canvas.draw_text("Players tie. New round?",pos_text,15,'Black') 
-                
-    if card_c!=None:
-        card_c.draw(canvas)
-    
-    for i in range(len(players)):
-        for j in range(12):
-            #only cards which exist are drawn:
-            if players[i].exist[j]==1:
-                card=players[i].list_cards[j]
-                if len(players)==2:
-                    drawpos=list(card.position)
-                    drawpos[0]=i*290+players[i].positionx[j]
-                    drawpos[1]=100+players[i].positiony[j]
-                    card.set_position(drawpos)
-                    card.draw(canvas)
-                    if players[i]!=player  and sum(np.abs(end_score))==0:
-                        canvas.draw_text(players[i].name,(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')
-                    elif players[i]==player and sum(np.abs(end_score))==0 :   
-                        #indicate whose turn it is
-                        canvas.draw_text(players[i].name+" turn",(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')   
-                    else:
-                        canvas.draw_text(players[i].name+" "+str(tot_score[i]),(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')                         
-                if len(players)>2:
-                    #parameter how to structure the layout
-                    x=round(len(players)/2)
-                    drawpos=list(card.position)
-                    drawpos[0]=(i%x)*290+players[i].positionx[j]
-                    drawpos[1]=180*(i//x)+100+players[i].positiony[j]
-                    card.set_position(drawpos)
-                    card.draw(canvas)
-                    if players[i]!=player and sum(np.abs(end_score))==0:
-                        canvas.draw_text(players[i].name,(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')   
-                    elif players[i]==player and sum(np.abs(end_score))==0: 
-                        canvas.draw_text(players[i].name+" turn",(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')                        
-                    else:
-                        canvas.draw_text(players[i].name+" "+str(tot_score[i]),(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')  
-    #visualization of current total score starts when first round finished
-    if (tot_score[0]!=0 or tot_score[1]!=0) and len(players)==2:
-        viz_fac=0.25
-        canvas.draw_line([265, 280-100*viz_fac], [305, 280-100*viz_fac], 2, 'Red')
-        for i in range(2):
-            canvas.draw_polygon([[270+i*20, 280], [270+i*20, 280-tot_score[i]*viz_fac], [280+i*20, 280-tot_score[i]*viz_fac], [280+i*20, 280]], 1, 'Gray','Gray')                         
+                if tot_score[0]!=tot_score[1]:
+                    canvas.draw_text(players[np.argmin(tot_score)].name+" leads.  New round?",pos_text,15,'Black')
+                else:
+                    canvas.draw_text("Players tie. New round?",pos_text,15,'Black') 
+        
+        #choosen pile by human
+        if card_c!=None:
+            card_c.draw(canvas)
+        #draw palyer card
+        for i in range(len(players)):
+            for j in range(12):
+                #only cards which exist are drawn:
+                if players[i].exist[j]==1:
+                    card=players[i].list_cards[j]
+                    if len(players)==2:
+                        drawpos=list(card.position)
+                        drawpos[0]=i*290+players[i].positionx[j]
+                        drawpos[1]=100+players[i].positiony[j]
+                        card.set_position(drawpos)
+                        card.draw(canvas)
+                        if players[i]!=player  and sum(np.abs(end_score))==0:
+                            canvas.draw_text(players[i].name,(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')
+                        elif players[i]==player and sum(np.abs(end_score))==0 :   
+                            #indicate whose turn it is
+                            canvas.draw_text(players[i].name+" turn",(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')   
+                        else:
+                            canvas.draw_text(players[i].name+" "+str(tot_score[i]),(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')                         
+                    if len(players)>2:
+                        #parameters how to structure the layout
+                        x=round(len(players)/2)
+                        drawpos=list(card.position)
+                        drawpos[0]=(i%x)*290+players[i].positionx[j]
+                        drawpos[1]=180*(i//x)+100+players[i].positiony[j]
+                        card.set_position(drawpos)
+                        card.draw(canvas)
+                        if players[i]!=player and sum(np.abs(end_score))==0:
+                            canvas.draw_text(players[i].name,(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')   
+                        elif players[i]==player and sum(np.abs(end_score))==0: 
+                            canvas.draw_text(players[i].name+" turn",(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')                        
+                        else:
+                            canvas.draw_text(players[i].name+" "+str(tot_score[i]),(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')  
+        #visualization of current total score starts when first round finished
+        if (tot_score[0]!=0 or tot_score[1]!=0) and len(players)==2:
+            viz_fac=0.25
+            canvas.draw_line([265, 280-100*viz_fac], [305, 280-100*viz_fac], 2, 'Red')
+            for i in range(2):
+                canvas.draw_polygon([[270+i*20, 280], [270+i*20, 280-tot_score[i]*viz_fac], [280+i*20, 280-tot_score[i]*viz_fac], [280+i*20, 280]], 1, 'Gray','Gray')                         
 
 def new_game():
-    global mousepos,player, canvas, card_c, step, in_play, counter, endcounter, end_score, finisher, players, names, mode, level, silent,numeric, discard, take_open, tot_score, listnum, in_game, in_round
-    if in_game==False:
+    global mousepos,player, canvas, card_c, step, in_play, counter, endcounter, end_score, finisher, players, names, mode, level, silent,numeric, discard, take_open, tot_score, listnum, in_game, in_round, start_screen
+    #start either at the beginning (start_screen or new game)
+    if in_game==False or start_screen==True:
+        start_screen=False
         pile_closed=Pile('create_closed',False)
         pile_open=Pile('create_open',pile_closed)
         alpha=Player(names[0],mode[0],level[0],pile_closed)
@@ -1435,8 +1450,6 @@ def mouseclick(pos):
                 if length>=99:
                     file_name=name_string+str(length+1)+".txt"                
                 np.savetxt(file_name,final)            
-               
-        #problems when there is a tie in the score
 
               
 #for level 1 computer needed                     
@@ -1469,6 +1482,7 @@ take_open=True
 listnum=[]
 in_game=True
 in_round=True
+start_screen=True
 
 for i in range(len(players)):
     end_score.append(0)
@@ -1494,7 +1508,7 @@ frame.set_canvas_background("White")
 frame.add_button("discard", discard_yes, 200)
 frame.add_button("keep", discard_no, 200)
 frame.add_button("new round", new_round, 200) 
-frame.add_button("new game", new_game, 200)    
+frame.add_button("start game", new_game, 200)    
 
 
 frame.set_mouseclick_handler(mouseclick)
