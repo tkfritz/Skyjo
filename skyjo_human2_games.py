@@ -1128,7 +1128,7 @@ def skyjo_game(names,nature,levels,pause,silent=True,output=False):
             
 # draw function
 def draw(canvas):
-    global pile_open,pile_closed, players,card_b, card_a, step, discard, take_open, player, end_score, player
+    global pile_open,pile_closed, players,card_b, card_a, step, discard, take_open, player, end_score, player, tot_score
     #display the top most card
     p_open=pile_open.list_cards[-1]
     p_closed=pile_closed.list_cards[-1]
@@ -1164,8 +1164,7 @@ def draw(canvas):
                 
     if card_c!=None:
         card_c.draw(canvas)
-    #if card_a!=None: not done currently
-    #    card_a.draw(canvas)        
+    
     for i in range(len(players)):
         for j in range(12):
             #only cards which exist are drawn:
@@ -1185,7 +1184,7 @@ def draw(canvas):
                     else:
                         canvas.draw_text(players[i].name+" "+str(tot_score[i]),(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')                         
                 if len(players)>2:
-                    #paramter how to structure the layout
+                    #parameter how to structure the layout
                     x=round(len(players)/2)
                     drawpos=list(card.position)
                     drawpos[0]=(i%x)*290+players[i].positionx[j]
@@ -1198,7 +1197,12 @@ def draw(canvas):
                         canvas.draw_text(players[i].name+" turn",(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')                        
                     else:
                         canvas.draw_text(players[i].name+" "+str(tot_score[i]),(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')  
-                        
+    #visualization of current total score starts when first round finished
+    if (tot_score[0]!=0 or tot_score[1]!=0) and len(players)==2:
+        viz_fac=0.25
+        canvas.draw_line([265, 280-100*viz_fac], [305, 280-100*viz_fac], 2, 'Red')
+        for i in range(2):
+            canvas.draw_polygon([[270+i*20, 280], [270+i*20, 280-tot_score[i]*viz_fac], [280+i*20, 280-tot_score[i]*viz_fac], [280+i*20, 280]], 1, 'Gray','Gray')                         
 
 def new_game():
     global mousepos,player, canvas, card_c, step, in_play, counter, endcounter, end_score, finisher, players, names, mode, level, silent,numeric, discard, take_open, tot_score, listnum, in_game, in_round
