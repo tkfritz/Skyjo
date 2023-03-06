@@ -4,14 +4,14 @@ In this directory I develop and implement the card game Skyjo with python to pla
 
 ## Playing Skyjo
 
-The aim of the game is to finish with the least number of points. It starts with 2 open cards. When one player finishes opening all cards, the others may take one more card. Then the numerical values of the cards are added together. Caution, when the first player to finish does not have the smallest number of points his points are then doubled. This is one round. Several rounds are played until one player has at least 100 points. The player with the smallest number of points wins. The detailed actions are explained in the GUI. For playing Skyjo against a computer it is necessary to download the following files and to place them in one directory: skyjo_human2_games.py xgb_model1_column2.txt xgb_model2.json
+The aim of the game is to finish with the least number of points. When there are three equal values in a column, they all vanish. When one player finishes opening all cards, the others may take one more card. Then the numerical values of the cards are added together. Caution, when the first player to finish does not have the smallest number of points his points are then doubled. This is one round. Several rounds are played until one player has at least 100 points. The player with the smallest number of points wins. The detailed actions are explained in the GUI. For playing Skyjo against a computer it is necessary to download the following files and to place them in one directory: skyjo_human2_games.py xgb_model1_column2.txt xgb_model2.json
 
 The computer needs to have the standard python libraries (check what is imported in the top of skyjo_human2_games.py) and also xgboost and simpleguitk.
 
 Then just run python skyjo_human2_games.py and the rest are mouse clicks in the GUI.
 
 Besides this prefreed version to play skyjo, single rounds can also be played in skyjo_human_developing1.py
-In  skyjo_human2.py the newest levels are added, but it is not improvement, see below. It is needs also xgb_model3.json
+In skyjo_human2.py the newest levels are added, but it is not improvement, see below. It is needs also xgb_model3.json
 
 ## Developing Skjo
 
