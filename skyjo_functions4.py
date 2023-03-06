@@ -1198,6 +1198,12 @@ def draw(canvas):
                         canvas.draw_text(players[i].name+" turn",(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')                        
                     else:
                         canvas.draw_text(players[i].name+" "+str(tot_score[i]),(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')  
+    #visualization of current total score starts when first round finished
+    if (tot_score[0]!=0 or tot_score[1]!=0) and len(players)==2:
+        viz_fac=0.25
+        canvas.draw_line([265, 280-100*viz_fac], [305, 280-100*viz_fac], 2, 'Red')
+        for i in range(2):
+            canvas.draw_polygon([[270+i*20, 280], [270+i*20, 280-tot_score[i]*viz_fac], [280+i*20, 280-tot_score[i]*viz_fac], [280+i*20, 280]], 1, 'Gray','Gray')                           
                         
 
 def new_game():
