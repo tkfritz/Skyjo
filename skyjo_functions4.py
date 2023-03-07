@@ -1297,6 +1297,7 @@ def new_game():
     global mousepos,player, canvas, card_c, step, in_play, counter, endcounter, end_score, finisher, players, names, mode, level, silent,numeric, discard, take_open, tot_score, listnum, in_game, in_round, start_screen
     #start either at the beginning (start_screen or new game)
     if in_game==False or start_screen==True:
+        start_screen=False
         pile_closed=Pile('create_closed',False)
         pile_open=Pile('create_open',pile_closed)
         alpha=Player(names[0],mode[0],level[0],pile_closed)
