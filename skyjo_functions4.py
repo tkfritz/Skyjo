@@ -12,11 +12,15 @@ import os
                  
 #for level 1 computer needed                     
 level1_2players_columns=np.loadtxt("xgb_model1_column2.txt")
+level5_2players_columns=np.loadtxt("xgb_model1_column2.txt")
 level1_2players_model = XGBRegressor()
 level1_2players_model.load_model("xgb_model2.json")
 #level 3
 level3_2players_model = XGBRegressor()
 level3_2players_model.load_model("xgb_model3.json")
+#level 5
+level5_2players_model = XGBRegressor()
+level5_2players_model.load_model("xgb_model1eb.json")
 
 #cards of the game
 class Card:
@@ -630,7 +634,7 @@ def actions(player,players,pile,discarded,take_open, discard,silent=True,simulat
 #name of model, which column to be used, inut file1, index, open_card column, discard column, round_number, silent
 #optional second input file 
 #optinal adding a gausian random number to results
-def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs,silent=True,input2=0,g_sigma=0):
+def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs,level,silent=True,input2=0,g_sigma=0):
     if n_inputs==1:
         #round 1 option
         if silent==False:
@@ -641,19 +645,57 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
         if silent==False:
             print("doing round 0 simulation")        
         all_scores=np.zeros((4,input1.shape[1]+input2.shape[2]))
-    #doing part for all known cards now
-    selected=np.zeros((int(sum(columns)),input1.shape[1]))
+    #just use all marked for level 1 to 4
+    if level<=4:
+        selected=np.zeros((int(sum(columns)),input1.shape[1]))
+    #is transformed to 13 length  and needs also preliminary array   
+    if level==5 or level==6:
+        prel_selected=np.zeros((int(sum(columns)),input1.shape[1]))
+        selected=np.zeros((11,input1.shape[1]))
     #get the right columns
     counter=0
     for i in range(input1.shape[0]):
         if  columns[i]==1:
-            selected[counter,:]=input1[i,:]
+            if level<=4:
+                selected[counter,:]=input1[i,:]
+            if level==5 or  level==6:
+                prel_selected[counter,:]=input1[i,:]
             counter+=1
-    #predict scores using xgb model, transpoised needed for it        
+    #now tranform prel_selected to selected for level 5 and 6
+    if level==5 or  level==6:
+        #first open pile card as some just copied 
+        selected[0,:]=prel_selected[0,:]
+        #now own_n_closed  own_n_open  own_sum and of other player the same 
+        #iterate over options
+        for j in range(prel_selected.shape[1]):
+            #check the 12 cards for agregate measures
+            for i in range(12):
+                #self player
+                if prel_selected[1+i,j]==20:
+                    selected[1,j]+=1
+                elif prel_selected[1+i,j]<20:
+                    selected[2,j]+=1
+                    selected[3,j]+=prel_selected[1+i,j]
+                #other player    
+                if prel_selected[13+i,j]==20:
+                    selected[4,j]+=1
+                elif prel_selected[13+i,j]<20:
+                    selected[5,j]+=1
+                    selected[6,j]+=prel_selected[13+i,j]
+                    
+        #at the end again copied  action_take_open  action_discard   discard_value gap  numeric_player_card
+        selected[selected.shape[0]-4:selected.shape[0]-1,:]=prel_selected[prel_selected.shape[0]-5:prel_selected.shape[0]-2,:]
+        selected[selected.shape[0]-1,:]=prel_selected[prel_selected.shape[0]-1,:]
+        
+    #predict scores using xgb model, transpoised needed for it     
     pred_scores1=model.predict(selected.T)
     all_scores[0,:input1.shape[1]]=selected.T[:,take_open]
     all_scores[1,:input1.shape[1]]=selected.T[:,discard]
-    all_scores[3,:input1.shape[1]]=selected.T[:,index]
+    if index>=0:
+        all_scores[3,:input1.shape[1]]=selected.T[:,index]
+    else:
+        #from preliminary file since only there is index 
+        all_scores[3,:input1.shape[1]]=prel_selected.T[:,-index]        
     if g_sigma==0:
         all_scores[2,:input1.shape[1]]=pred_scores1
     #if noise added    
@@ -668,21 +710,55 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
         #go over different cards
         for k in range(input2.shape[2]):
             #get prediction for all possible closed card values
-            selected=np.zeros((int(sum(columns)),15))
+            if level<=4:
+                selected=np.zeros((int(sum(columns)),15))
+            if level==5 or level==6:
+                prel_selected=np.zeros((int(sum(columns)),15))
+                selected=np.zeros((11,15))
             #get the needed columns
             counter=0
             for i in range(input2.shape[1]):
                 if  columns[i]==1:
-                    selected[counter,:]=input2[:,i,k]
+                    if level<=4:
+                        selected[counter,:]=input2[:,i,k]
+                    if level==5 or  level==6:
+                        prel_selected[counter,:]=input2[:,i,k]
                     counter+=1
+            if level==5 or level==6:      
+                #first open pile card as some just copied 
+                selected[0,:]=prel_selected[0,:]
+                #now own_n_closed  own_n_open  own_sum and of other player the same     
+                for j in range(prel_selected.shape[1]):
+                    #check the 12 cards for agregate measures
+                    for i in range(12):
+                    #self player
+                        if prel_selected[1+i,j]==20:
+                            selected[1,j]+=1
+                        elif prel_selected[1+i,j]<20:
+                            selected[2,j]+=1
+                            selected[3,j]+=prel_selected[1+i,j]
+                        #other player    
+                        if prel_selected[13+i,j]==20:
+                            selected[4,j]+=1
+                        elif prel_selected[13+i,j]<20:
+                            selected[5,j]+=1
+                            selected[6,j]+=prel_selected[13+i,j]
+                    #at the end again copied  action_take_open  action_discard   discard_value gap numeric_player_card
+                    selected[selected.shape[0]-4:selected.shape[0]-1,:]=prel_selected[prel_selected.shape[0]-5:prel_selected.shape[0]-2,:]
+                    selected[selected.shape[0]-1,:]=prel_selected[prel_selected.shape[0]-1,:]                
+            
             #transposed need to be used for xgb prediction
             pred_scores2=model.predict(selected.T)
             #weighted average them 
             weight_avg=np.dot(pred_scores2,weight_vec)
-            #all have same values in selected 0 from same coordinate why
+            #all have same values in it thus selected 0
             all_scores[0,input1.shape[1]+k]=selected.T[0,take_open]
-            all_scores[1,input1.shape[1]+k]=selected.T[0,discard]            
-            all_scores[3,input1.shape[1]+k]=selected.T[0,index]   
+            all_scores[1,input1.shape[1]+k]=selected.T[0,discard]   
+            if index>=0:
+                all_scores[3,input1.shape[1]+k]=selected.T[0,index]
+            else:
+                #from preliminary file
+                all_scores[3,input1.shape[1]+k]=prel_selected.T[0,-index]
             #if no noise added
             if g_sigma==0:
                 all_scores[2,input1.shape[1]+k]=weight_avg
@@ -737,11 +813,11 @@ def turn(player,players,pile,discarded,silent=True,output=False):
     if player.mode=='computer':
         #dictionaries here used level number to: models, column to be used, colomns of open, discard, index of card
         #for 2 players
-        player_2models={1:level1_2players_model,2:level1_2players_model,3:level3_2players_model,4:level3_2players_model}
-        player_2columns={1:level1_2players_columns,2:level1_2players_columns,3:level1_2players_columns,4:level1_2players_columns}
-        player_2take_open={1:25,2:25,3:25,4:25}
-        player_2discard={1:26,2:26,3:26,4:26}
-        player_2index={1:28,2:28,3:28,4:28}        
+        player_2models={1:level1_2players_model,2:level1_2players_model,3:level3_2players_model,4:level3_2players_model,5:level5_2players_model,6:level5_2players_model}
+        player_2columns={1:level1_2players_columns,2:level1_2players_columns,3:level1_2players_columns,4:level1_2players_columns,5:level5_2players_columns,6:level5_2players_columns}
+        player_2take_open={1:25,2:25,3:25,4:25,5:7,6:7}
+        player_2discard={1:26,2:26,3:26,4:26,5:8,6:8}
+        player_2index={1:28,2:28,3:28,4:28,5:-28,6:-28}#negativ index means it is the value   
         #in level 0 random 50% choice of action
         if player.level==0:
             r_number1=random.random()
@@ -768,27 +844,27 @@ def turn(player,players,pile,discarded,silent=True,output=False):
                 discard=False
         if player.level==-2:
                 discard=True
-        #first level which implements machine learning   is implemented  
+        #logic is the same for all current levels differences in determine_best_option
         if len(players)==2:
-            if player.level==1 or player.level==3:
+            if player.level==1 or player.level==3 or player.level==5:
                 #simulations are done first, taken_open and discard are meaning less here
                 num1,num2=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=0)
-                take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],2,silent=silent,input2=num2)
+                take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],2,player.level,silent=silent,input2=num2)
                 #round 2 if best option is closed
                 if take_open==-1:
                     num1=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=1)
-                    take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],1,silent=silent)   
+                    take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],1,player.level,silent=silent)   
             #this is the same as before but adds gaussian noise
-            if player.level==2 or player.level==4:
+            if player.level==2 or player.level==4 or player.level==6:
                 #simulations are done first, taken_open and discard are meaning less here
                 num1,num2=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=0)
                 #gassuan noise added in determoine best option
-                take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],2,silent=silent,input2=num2,g_sigma=2)
+                take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],2,player.level,silent=silent,input2=num2,g_sigma=2)
                 #round 2 if best option is closed
                 if take_open==-1:
                     num1=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=1)
                     #gaussian npise here added when deternining best option
-                    take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],1,silent=silent,g_sigma=2)                   
+                    take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],1,player.level,silent=silent,g_sigma=2)    
     #now action function
     if silent==False:
         print("player "+player.name+" turn")
@@ -831,7 +907,7 @@ def allowed_modes(names,nature,levels):
     nature_list = ['computer','human']    
     #list of allowed computer level for 2 players
     #less implemented for more players
-    comp_level_list2 = [4,3,2,1,0,-1,-2,-3]
+    comp_level_list2 = [6,5,4,3,2,1,0,-1,-2,-3]
     comp_level_list3 = [0,-1,-2,-3]
     comp_level_list4 = [0,-1,-2,-3]
     comp_level_list5 = [0,-1,-2,-3]
@@ -1128,87 +1204,99 @@ def skyjo_game(names,nature,levels,pause,silent=True,output=False):
             
 # draw function
 def draw(canvas):
-    global pile_open,pile_closed, players,card_b, card_a, step, discard, take_open, player, end_score, player
-    #display the top most card
-    p_open=pile_open.list_cards[-1]
-    p_closed=pile_closed.list_cards[-1]
-    # test to make sure that card.draw works
-    p_open.draw(canvas)
-    p_closed.draw(canvas)
-    pos_text=[293,45]
-    #if not ended 
-    if sum(np.abs(end_score))==0 and player.mode=='human':
-        #instructions what to do 
-        if step==0:
-            canvas.draw_text("Choose open or closed pile",pos_text,15,'Black')
-        if step==1:
-            canvas.draw_text("Discard or keep?",pos_text,15,'Black')
-        if step==2:
-            if discard==True and take_open==False:
-               canvas.draw_text("Choose closed card",pos_text,15,'Black')
-            else:    
-               canvas.draw_text("Choose any card",pos_text,15,'Black')
-    elif player.mode=='computer' and sum(np.abs(end_score))==0:
-        canvas.draw_text("Click anywhere for computer",pos_text,15,'Black')
+    global pile_open,pile_closed, players,card_b, card_a, step, discard, take_open, player, end_score, player, tot_score, start_screen
+    if start_screen==True:
+        #start text which explain the basic rules
+        canvas.draw_text("Skyjo",[200,30],25,'Blue')
+        canvas.draw_text("The aim of the game is to finish with the least number of points. When there are",[5,55],10,'Black')
+        canvas.draw_text("three equal values in a column, they all vanish. When one player finishes opening",[5,67],10,'Black')
+        canvas.draw_text("all cards, the others may take one more card. Then the numerical values of the",[5,79],10,'Black')
+        canvas.draw_text("cards are added together. Caution, when the first player to finish does not have",[5,91],10,'Black')
+        canvas.draw_text("the smallest number of points his points are then doubled. This is one round.",[5,103],10,'Black')
+        canvas.draw_text("Several rounds are played until one player has at least 100 points. The player",[5,115],10,'Black')
+        canvas.draw_text("with the smallest number of points wins. The detailed actions are explained later.",[5,127],10,'Black')
+        canvas.draw_text("Start Game?",[180,155],17,'Red')
     else:
-        if max(tot_score)>=100:
-            if tot_score[0]!=tot_score[1]:
-                canvas.draw_text(players[np.argmin(tot_score)].name+" won. New game?",pos_text,15,'Black')
-            else:
-                canvas.draw_text("Players tied. New game?",pos_text,15,'Black')    
+        #display the top most cards
+        p_open=pile_open.list_cards[-1]
+        p_closed=pile_closed.list_cards[-1]
+        p_open.draw(canvas)
+        p_closed.draw(canvas)
+        pos_text=[293,45]
+        #if not ended 
+        if sum(np.abs(end_score))==0 and player.mode=='human':
+            #text instructions what to do for human 
+            if step==0:
+                canvas.draw_text("Choose face down or up pile",pos_text,15,'Black')
+            if step==1:
+                canvas.draw_text("Discard or keep?",pos_text,15,'Black')
+            if step==2:
+               if discard==True and take_open==False:
+                   canvas.draw_text("Choose face down card",pos_text,15,'Black')
+               else:    
+                   canvas.draw_text("Choose any card",pos_text,15,'Black')
+        elif player.mode=='computer' and sum(np.abs(end_score))==0:
+            canvas.draw_text("Click anywhere for computer",pos_text,15,'Black')
         else:
-            if tot_score[0]!=tot_score[1]:
-                canvas.draw_text(players[np.argmin(tot_score)].name+" leads.  New round?",pos_text,15,'Black')
+            #results and instructions at the end of game and round
+            if max(tot_score)>=100:
+                if tot_score[0]!=tot_score[1]:
+                    canvas.draw_text(players[np.argmin(tot_score)].name+" won. Start new game?",pos_text,15,'Black')
+                else:
+                    canvas.draw_text("Players tied. Start new game?",pos_text,15,'Black')    
             else:
-                canvas.draw_text("Players tie. New round?",pos_text,15,'Black') 
-                
-    if card_c!=None:
-        card_c.draw(canvas)
-    #if card_a!=None: not done currently
-    #    card_a.draw(canvas)        
-    for i in range(len(players)):
-        for j in range(12):
-            #only cards which exist are drawn:
-            if players[i].exist[j]==1:
-                card=players[i].list_cards[j]
-                if len(players)==2:
-                    drawpos=list(card.position)
-                    drawpos[0]=i*290+players[i].positionx[j]
-                    drawpos[1]=100+players[i].positiony[j]
-                    card.set_position(drawpos)
-                    card.draw(canvas)
-                    if players[i]!=player  and sum(np.abs(end_score))==0:
-                        canvas.draw_text(players[i].name,(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')
-                    elif players[i]==player and sum(np.abs(end_score))==0 :   
-                        #indicate whose turn it is
-                        canvas.draw_text(players[i].name+" turn",(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')   
-                    else:
-                        canvas.draw_text(players[i].name+" "+str(tot_score[i]),(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')                         
-                if len(players)>2:
-                    #paramter how to structure the layout
-                    x=round(len(players)/2)
-                    drawpos=list(card.position)
-                    drawpos[0]=(i%x)*290+players[i].positionx[j]
-                    drawpos[1]=180*(i//x)+100+players[i].positiony[j]
-                    card.set_position(drawpos)
-                    card.draw(canvas)
-                    if players[i]!=player and sum(np.abs(end_score))==0:
-                        canvas.draw_text(players[i].name,(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')   
-                    elif players[i]==player and sum(np.abs(end_score))==0: 
-                        canvas.draw_text(players[i].name+" turn",(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')                        
-                    else:
-                        canvas.draw_text(players[i].name+" "+str(tot_score[i]),(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')  
-    #visualization of current total score starts when first round finished
-    if (tot_score[0]!=0 or tot_score[1]!=0) and len(players)==2:
-        viz_fac=0.25
-        canvas.draw_line([265, 280-100*viz_fac], [305, 280-100*viz_fac], 2, 'Red')
-        for i in range(2):
-            canvas.draw_polygon([[270+i*20, 280], [270+i*20, 280-tot_score[i]*viz_fac], [280+i*20, 280-tot_score[i]*viz_fac], [280+i*20, 280]], 1, 'Gray','Gray')                           
-                        
+                if tot_score[0]!=tot_score[1]:
+                    canvas.draw_text(players[np.argmin(tot_score)].name+" leads.  New round?",pos_text,15,'Black')
+                else:
+                    canvas.draw_text("Players tie. New round?",pos_text,15,'Black') 
+        
+        #choosen pile by human
+        if card_c!=None:
+            card_c.draw(canvas)
+        #draw palyer card
+        for i in range(len(players)):
+            for j in range(12):
+                #only cards which exist are drawn:
+                if players[i].exist[j]==1:
+                    card=players[i].list_cards[j]
+                    if len(players)==2:
+                        drawpos=list(card.position)
+                        drawpos[0]=i*290+players[i].positionx[j]
+                        drawpos[1]=100+players[i].positiony[j]
+                        card.set_position(drawpos)
+                        card.draw(canvas)
+                        if players[i]!=player  and sum(np.abs(end_score))==0:
+                            canvas.draw_text(players[i].name,(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')
+                        elif players[i]==player and sum(np.abs(end_score))==0 :   
+                            #indicate whose turn it is
+                            canvas.draw_text(players[i].name+" turn",(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')   
+                        else:
+                            canvas.draw_text(players[i].name+" "+str(tot_score[i]),(100+(i%2)*290,185*(1+(i//2))+90),15,'Black')                         
+                    if len(players)>2:
+                        #parameters how to structure the layout
+                        x=round(len(players)/2)
+                        drawpos=list(card.position)
+                        drawpos[0]=(i%x)*290+players[i].positionx[j]
+                        drawpos[1]=180*(i//x)+100+players[i].positiony[j]
+                        card.set_position(drawpos)
+                        card.draw(canvas)
+                        if players[i]!=player and sum(np.abs(end_score))==0:
+                            canvas.draw_text(players[i].name,(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')   
+                        elif players[i]==player and sum(np.abs(end_score))==0: 
+                            canvas.draw_text(players[i].name+" turn",(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')                        
+                        else:
+                            canvas.draw_text(players[i].name+" "+str(tot_score[i]),(100+(i%x)*290,185*(1+(i//x))+90),15,'Black')  
+        #visualization of current total score starts when first round finished
+        if (tot_score[0]!=0 or tot_score[1]!=0) and len(players)==2:
+            viz_fac=0.25
+            canvas.draw_line([265, 280-100*viz_fac], [305, 280-100*viz_fac], 2, 'Red')
+            for i in range(2):
+                canvas.draw_polygon([[270+i*20, 280], [270+i*20, 280-tot_score[i]*viz_fac], [280+i*20, 280-tot_score[i]*viz_fac], [280+i*20, 280]], 1, 'Gray','Gray')       
 
 def new_game():
-    global mousepos,player, canvas, card_c, step, in_play, counter, endcounter, end_score, finisher, players, names, mode, level, silent,numeric, discard, take_open, tot_score, listnum, in_game, in_round
-    if in_game==False:
+    global mousepos,player, canvas, card_c, step, in_play, counter, endcounter, end_score, finisher, players, names, mode, level, silent,numeric, discard, take_open, tot_score, listnum, in_game, in_round, start_screen
+    #start either at the beginning (start_screen or new game)
+    if in_game==False or start_screen==True:
         pile_closed=Pile('create_closed',False)
         pile_open=Pile('create_open',pile_closed)
         alpha=Player(names[0],mode[0],level[0],pile_closed)
