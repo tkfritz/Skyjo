@@ -6,7 +6,10 @@ import time
 #new ones
 import pandas as pd
 from xgboost import XGBRegressor
+from sklearn.linear_model import LinearRegression
 import os
+#for sklearn programs
+import pickle
 
 
                  
@@ -21,6 +24,8 @@ level3_2players_model.load_model("xgb_model3.json")
 #level 5
 level5_2players_model = XGBRegressor()
 level5_2players_model.load_model("xgb_model1eb.json")
+#level 7
+level7_2players_model= pickle.load(open('linear_feat_eng1.pkl', 'rb'))
 
 #cards of the game
 class Card:
@@ -652,13 +657,16 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
     if level==5 or level==6:
         prel_selected=np.zeros((int(sum(columns)),input1.shape[1]))
         selected=np.zeros((11,input1.shape[1]))
+    if level==7 or level==8:
+        prel_selected=np.zeros((int(sum(columns)),input1.shape[1]))
+        selected=np.zeros((7,input1.shape[1]))    
     #get the right columns
     counter=0
     for i in range(input1.shape[0]):
         if  columns[i]==1:
             if level<=4:
                 selected[counter,:]=input1[i,:]
-            if level==5 or  level==6:
+            if level==5 or  level==6 or  level==7 or  level==8:
                 prel_selected[counter,:]=input1[i,:]
             counter+=1
     #now tranform prel_selected to selected for level 5 and 6
@@ -686,11 +694,47 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
         #at the end again copied  action_take_open  action_discard   discard_value gap  numeric_player_card
         selected[selected.shape[0]-4:selected.shape[0]-1,:]=prel_selected[prel_selected.shape[0]-5:prel_selected.shape[0]-2,:]
         selected[selected.shape[0]-1,:]=prel_selected[prel_selected.shape[0]-1,:]
-        
+    #now tranform prel_selected to selected for level 7 and 8   
+    if level==7 or  level==8:
+        #'own_n_closed', 'other_player_n_closed', 'current_score_diff', 'all_actions', 'own_ncl_action', 'other_ncl_action', 'squared_action' 
+        #iterate over options
+        for j in range(prel_selected.shape[1]):
+            #check the 12 cards for agregate measures
+            for i in range(12):
+                #self player
+                if prel_selected[1+i,j]==20:
+                    selected[0,j]+=1
+                elif prel_selected[1+i,j]<20:
+                    selected[2,j]+=prel_selected[1+i,j]
+                #other player    
+                if prel_selected[13+i,j]==20:
+                    selected[1,j]+=1
+                elif prel_selected[13+i,j]<20:
+                    selected[2,j]-=prel_selected[13+i,j]
+            #change closed to 5.0666
+            if prel_selected[29,j]==20:
+                prel_selected[29,j]=5+1/15    
+        # all_actions=take_open*(open_value-value_player)+(1-take_open)*(1-discard)*(discard_vale-value_player)           
+        selected[3,:]=prel_selected[25,:]*(prel_selected[0,:]-prel_selected[29,:])+(1-prel_selected[25,:])*(1-prel_selected[26,:])*(prel_selected[27,:]-prel_selected[29,:])
+        #now products of previous one 'own_ncl_action'
+        selected[4,:]=selected[3,:]*selected[0,:]
+        # 'other_ncl_action'
+        selected[5,:]=selected[3,:]*selected[1,:]
+        # squared action 
+        selected[6,:]=selected[3,:]*selected[3,:]
+      
     #predict scores using xgb model, transpoised needed for it     
     pred_scores1=model.predict(selected.T)
-    all_scores[0,:input1.shape[1]]=selected.T[:,take_open]
-    all_scores[1,:input1.shape[1]]=selected.T[:,discard]
+    if take_open>=0:
+        all_scores[0,:input1.shape[1]]=selected.T[:,take_open]
+    else:
+        all_scores[0,:input1.shape[1]]=prel_selected.T[:,-take_open]
+                
+    if discard>=0:
+        all_scores[1,:input1.shape[1]]=selected.T[:,discard]  
+    else:
+        all_scores[1,:input1.shape[1]]=prel_selected.T[:,-discard]
+
     if index>=0:
         all_scores[3,:input1.shape[1]]=selected.T[:,index]
     else:
@@ -715,6 +759,9 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
             if level==5 or level==6:
                 prel_selected=np.zeros((int(sum(columns)),15))
                 selected=np.zeros((11,15))
+            if level==7 or level==8:
+                prel_selected=np.zeros((int(sum(columns)),15))
+                selected=np.zeros((7,15))                
             #get the needed columns
             counter=0
             for i in range(input2.shape[1]):
@@ -746,14 +793,51 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
                     #at the end again copied  action_take_open  action_discard   discard_value gap numeric_player_card
                     selected[selected.shape[0]-4:selected.shape[0]-1,:]=prel_selected[prel_selected.shape[0]-5:prel_selected.shape[0]-2,:]
                     selected[selected.shape[0]-1,:]=prel_selected[prel_selected.shape[0]-1,:]                
-            
+            #now tranform prel_selected to selected for level 7 and 8   
+            if level==7 or  level==8:
+                #'own_n_closed', 'other_player_n_closed', 'current_score_diff', 'all_actions', 'own_ncl_action', 'other_ncl_action', 'squared_action' 
+                #iterate over options
+                for j in range(prel_selected.shape[1]):
+                    #check the 12 cards for agregate measures
+                    for i in range(12):
+                        #self player
+                        if prel_selected[1+i,j]==20:
+                            selected[0,j]+=1
+                        elif prel_selected[1+i,j]<20:
+                            selected[2,j]+=prel_selected[1+i,j]
+                        #other player    
+                        if prel_selected[13+i,j]==20:
+                            selected[1,j]+=1
+                        elif prel_selected[13+i,j]<20:
+                            selected[2,j]-=prel_selected[13+i,j]
+                    #change closed to 5.0666
+                    if prel_selected[29,j]==20:
+                        prel_selected[29,j]=5+1/15    
+                # all_actions=take_open*(open_value-value_player)+(1-take_open)*(1-discard)*(discard_vale-value_player)           
+                selected[3,:]=prel_selected[25,:]*(prel_selected[0,:]-prel_selected[29,:])+(1-prel_selected[25,:])*(1-prel_selected[26,:])*(prel_selected[27,:]-prel_selected[29,:])
+                #now products of previous one 'own_ncl_action'
+                selected[4,:]=selected[3,:]*selected[0,:]
+                # 'other_ncl_action'
+                selected[5,:]=selected[3,:]*selected[1,:]
+                # squared action 
+                selected[6,:]=selected[3,:]*selected[3,:] 
+        
             #transposed need to be used for xgb prediction
             pred_scores2=model.predict(selected.T)
             #weighted average them 
             weight_avg=np.dot(pred_scores2,weight_vec)
             #all have same values in it thus selected 0
-            all_scores[0,input1.shape[1]+k]=selected.T[0,take_open]
-            all_scores[1,input1.shape[1]+k]=selected.T[0,discard]   
+            #if positive from direct otherwise from prelimary
+            if take_open>=0:
+                all_scores[0,input1.shape[1]+k]=selected.T[0,take_open]
+            else:
+                all_scores[0,input1.shape[1]+k]=prel_selected.T[0,-take_open]
+                
+            if discard>=0:
+                all_scores[1,input1.shape[1]+k]=selected.T[0,discard]  
+            else:
+                all_scores[1,input1.shape[1]+k]=prel_selected.T[0,-discard]
+                
             if index>=0:
                 all_scores[3,input1.shape[1]+k]=selected.T[0,index]
             else:
@@ -813,11 +897,11 @@ def turn(player,players,pile,discarded,silent=True,output=False):
     if player.mode=='computer':
         #dictionaries here used level number to: models, column to be used, colomns of open, discard, index of card
         #for 2 players
-        player_2models={1:level1_2players_model,2:level1_2players_model,3:level3_2players_model,4:level3_2players_model,5:level5_2players_model,6:level5_2players_model}
-        player_2columns={1:level1_2players_columns,2:level1_2players_columns,3:level1_2players_columns,4:level1_2players_columns,5:level5_2players_columns,6:level5_2players_columns}
-        player_2take_open={1:25,2:25,3:25,4:25,5:7,6:7}
-        player_2discard={1:26,2:26,3:26,4:26,5:8,6:8}
-        player_2index={1:28,2:28,3:28,4:28,5:-28,6:-28}#negativ index means it is the value   
+        player_2models={1:level1_2players_model,2:level1_2players_model,3:level3_2players_model,4:level3_2players_model,5:level5_2players_model,6:level5_2players_model,7:level7_2players_model,8:level7_2players_model}
+        player_2columns={1:level1_2players_columns,2:level1_2players_columns,3:level1_2players_columns,4:level1_2players_columns,5:level5_2players_columns,6:level5_2players_columns,7:level1_2players_columns,8:level1_2players_columns}
+        player_2take_open={1:25,2:25,3:25,4:25,5:7,6:7,7:-25,8:-25} #negativ means it is in prel_selected 
+        player_2discard={1:26,2:26,3:26,4:26,5:8,6:8,7:-26,8:-26}
+        player_2index={1:28,2:28,3:28,4:28,5:-28,6:-28,7:-28,8:-28}  
         #in level 0 random 50% choice of action
         if player.level==0:
             r_number1=random.random()
@@ -846,7 +930,7 @@ def turn(player,players,pile,discarded,silent=True,output=False):
                 discard=True
         #logic is the same for all current levels differences in determine_best_option
         if len(players)==2:
-            if player.level==1 or player.level==3 or player.level==5:
+            if player.level==1 or player.level==3 or player.level==5 or player.level==7:
                 #simulations are done first, taken_open and discard are meaning less here
                 num1,num2=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=0)
                 take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],2,player.level,silent=silent,input2=num2)
@@ -855,7 +939,7 @@ def turn(player,players,pile,discarded,silent=True,output=False):
                     num1=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=1)
                     take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],1,player.level,silent=silent)   
             #this is the same as before but adds gaussian noise
-            if player.level==2 or player.level==4 or player.level==6:
+            if player.level==2 or player.level==4 or player.level==6 or player.level==8:
                 #simulations are done first, taken_open and discard are meaning less here
                 num1,num2=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=0)
                 #gassuan noise added in determoine best option
@@ -907,7 +991,7 @@ def allowed_modes(names,nature,levels):
     nature_list = ['computer','human']    
     #list of allowed computer level for 2 players
     #less implemented for more players
-    comp_level_list2 = [6,5,4,3,2,1,0,-1,-2,-3]
+    comp_level_list2 = [8,7,6,5,4,3,2,1,0,-1,-2,-3]
     comp_level_list3 = [0,-1,-2,-3]
     comp_level_list4 = [0,-1,-2,-3]
     comp_level_list5 = [0,-1,-2,-3]
@@ -1528,12 +1612,11 @@ def mouseclick(pos):
                 np.savetxt(file_name,final)            
 
 
-
 global mousepos,player, canvas, card_c, step, in_play, counter, endcounter, end_score, finisher, players, names, mode, level, silent,numeric, discard, take_open, tot_score, listnum, in_game, in_round
 #define player parameters
 names=('Human','Computer')
 mode=('human','computer')
-level=(1,5)
+level=(1,7)
 #create pile and players
 pile_closed=Pile('create_closed',False)
 pile_open=Pile('create_open',pile_closed)
@@ -1586,4 +1669,3 @@ frame.add_button("start game", new_game, 200)
 frame.set_mouseclick_handler(mouseclick)
 frame.set_draw_handler(draw)
 frame.start()
-
