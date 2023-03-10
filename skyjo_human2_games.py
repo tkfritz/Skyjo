@@ -11,6 +11,11 @@ import os
 #for sklearn programs
 import pickle
 
+#to supress sklearn warning that the columns have no names
+def warn(*args, **kwargs):
+    pass
+import warnings
+warnings.warn = warn
 
                  
 #for level 1 computer needed                     
@@ -1158,7 +1163,7 @@ def skyjo_round(names,nature,levels,pause,first_round,silent=True,output=False):
         #check whether cards need to vanished before counting
         for i in range(len(players)):
             for j in range(4):
-                card_needs_to_vanish=vanish_check(player,silent=silent)
+                card_needs_to_vanish=vanish_check(players[i],silent=silent)
         #get score of round, list        
         scores=[]
         for i in range(len(players)):
