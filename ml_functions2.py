@@ -8,6 +8,9 @@ import pandas as pd
 #likely not needed un this notebook 
 import simpleguitk as simplegui
 from xgboost import XGBRegressor
+from xgboost import XGBClassifier 
+#metrics
+from sklearn.metrics import confusion_matrix
 
 #other function needed for it 
 #upwards compatible
@@ -168,3 +171,44 @@ def loop_reg(feature_train, target_train, feature_test, target_test,max_depth,re
         resb[:,i]=ar
         #saved at each step because it sometimes crashes 
         np.savetxt(file_name, resb) 
+
+#f1 measure row x 
+def fmeas(conf_matrix,x):
+    prec=conf_matrix[x,x]/np.sum(conf_matrix[:,x])
+    rec=conf_matrix[x,x]/np.sum(conf_matrix[x])
+    f1=(2*prec*rec)/(prec+rec)
+    if prec==0 and rec==0:
+        f1=0
+    return f1
+
+#returns fractions of wrong  predicted
+def perwrong(conf_matrix):
+    return 1-(np.sum(conf_matrix)-conf_matrix[0,1]-conf_matrix[1,0])/np.sum(conf_matrix)
+
+
+#for xgb calssfier metric, is percentage wrong
+#feature_train, target_train, feature_test, target_train, max depth of xgb, needs always be set *6 is equal to default), optional regularization alpha (larger less overfitting)
+def do_xgb_class(feature_train, target_train, feature_test, target_test,max_depth,reg=0):
+    start_time=time.time()
+    #no regularization option
+    if reg==0:
+        regxl27=XGBClassifier(max_depth=max_depth).fit(feature_train, target_train)
+    else:
+        regxl27=XGBClassifier(max_depth=max_depth,reg_alpha=reg).fit(feature_train, target_train)        
+    stop_time=time.time()
+    print(f"xgb took {round(stop_time-start_time,4)} seconds")
+    predtest=regxl27.predict(feature_test)
+    predtrain=regxl27.predict(feature_train)
+    conf_train = confusion_matrix(target_train, predtrain)
+    conf_test = confusion_matrix(target_test, predtest)    
+    test=perwrong(conf_test)
+    train=perwrong(conf_train)
+    print(f"percentage wrong test {round(test*100,2)}")
+    print(f"percentage wrong train {round(train*100,2)} ")
+    #copy result to array which can be used by other function
+    ar=np.zeros((4))
+    ar[0]=reg
+    ar[1]=max_depth
+    ar[2]=train
+    ar[3]=test
+    return ar
