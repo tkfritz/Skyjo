@@ -74,10 +74,10 @@ class Card:
         corners=[[self.position],[self.position[0]+card_size[0],self.position[1]],[self.position[0]+card_size[0],self.position[1]+card_size[1]],[self.position[0],self.position[1]+card_size[1]]]
         if self.open==False:
             #closed black
-            canvas.draw_polygon(corners,1,'Black','Black')
+            canvas.draw_polygon(corners,1,'Gray','Black')
         else:
             #open colored number on gray
-            canvas.draw_polygon(corners,1,'Black','Light Gray')
+            canvas.draw_polygon(corners,1,'Gray','Light Gray')
             centerb=list(self.position)
             centerb[1]+=58
             centerb[0]+=5
@@ -1383,7 +1383,7 @@ def draw(canvas):
                 canvas.draw_polygon([[270+i*20, 280], [270+i*20, 280-tot_score[i]*viz_fac], [280+i*20, 280-tot_score[i]*viz_fac], [280+i*20, 280]], 1, 'Gray','Gray')       
 
 def new_game():
-    global mousepos,player, canvas, card_c, step, in_play, counter, endcounter, end_score, finisher, players, names, mode, level, silent,numeric, discard, take_open, tot_score, listnum, in_game, in_round, start_screen
+    global mousepos,player, canvas, card_c, step, in_play, counter, endcounter, end_score, finisher, players, names, mode, level, silent,numeric, discard, take_open, tot_score, listnum, in_game, in_round, start_screen, pile_open, pile_closed
     #start either at the beginning (start_screen or new game)
     if in_game==False or start_screen==True:
         start_screen=False
@@ -1417,7 +1417,7 @@ def new_game():
         counter=players.index(player)
 
 def new_round():
-    global mousepos,player, canvas, card_c, step, in_play, counter, endcounter, end_score, finisher, players, names, mode, level, silent,numeric, discard, take_open, tot_score, in_game, in_round
+    global mousepos,player, canvas, card_c, step, in_play, counter, endcounter, end_score, finisher, players, names, mode, level, silent,numeric, discard, take_open, tot_score, in_game, in_round, pile_open, pile_closed
     if in_game==True:
         pile_closed=Pile('create_closed',False)
         pile_open=Pile('create_open',pile_closed)
@@ -1621,7 +1621,7 @@ global mousepos,player, canvas, card_c, step, in_play, counter, endcounter, end_
 #define player parameters
 names=('Human','Computer')
 mode=('human','computer')
-level=(1,7)
+level=(1,5)
 #create pile and players
 pile_closed=Pile('create_closed',False)
 pile_open=Pile('create_open',pile_closed)
