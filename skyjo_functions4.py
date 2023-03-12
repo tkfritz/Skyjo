@@ -73,10 +73,10 @@ class Card:
         corners=[[self.position],[self.position[0]+card_size[0],self.position[1]],[self.position[0]+card_size[0],self.position[1]+card_size[1]],[self.position[0],self.position[1]+card_size[1]]]
         if self.open==False:
             #closed black
-            canvas.draw_polygon(corners,1,'Black','Black')
+            canvas.draw_polygon(corners,1,'Gray','Black')
         else:
             #open colored number on gray
-            canvas.draw_polygon(corners,1,'Black','Light Gray')
+            canvas.draw_polygon(corners,1,'Gray','Light Gray')
             centerb=list(self.position)
             centerb[1]+=58
             centerb[0]+=5
