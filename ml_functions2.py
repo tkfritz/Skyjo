@@ -161,13 +161,18 @@ def do_xgb(feature_train, target_train, feature_test, target_test,max_depth,reg=
 
 #feature, target(train), #feature, target(test), max_depth, start_reg, factor of increase, number of steps
 #name of output file
-def loop_reg(feature_train, target_train, feature_test, target_test,max_depth,reg_start,reg_increase,reg_steps,file_name):
+def loop_reg(feature_train, target_train, feature_test, target_test,max_depth,reg_start,reg_increase,reg_steps,file_name,regression=True):
     #that takes now some time
     resb=np.zeros((4,reg_steps))
     for i in range(reg_steps):
         print(f"doing case {i}")
         regularization=reg_start*reg_increase**i
-        ar=do_xgb(feature_train, target_train, feature_test, target_test,max_depth,reg=regularization)
+        #regression
+        if regression==True:
+            ar=do_xgb(feature_train, target_train, feature_test, target_test,max_depth,reg=regularization)
+        #classification
+        else:
+            ar=do_xgb_class(feature_train, target_train, feature_test, target_test,max_depth,reg=regularization)
         resb[:,i]=ar
         #saved at each step because it sometimes crashes 
         np.savetxt(file_name, resb) 
@@ -212,3 +217,4 @@ def do_xgb_class(feature_train, target_train, feature_test, target_test,max_dept
     ar[2]=train
     ar[3]=test
     return ar
+
