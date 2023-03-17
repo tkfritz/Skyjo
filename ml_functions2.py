@@ -218,3 +218,51 @@ def do_xgb_class(feature_train, target_train, feature_test, target_test,max_dept
     ar[3]=test
     return ar
 
+#find (and run) best xgbosst (regression and classification) of a collection
+#parameters are list of the files with the metric and parameters, train_features, train_targtes, whether regression (default) or classification
+def find_best(list_inputs,feature_train,target_train,output_file_name,regression=True):
+    a=np.loadtxt(list_inputs[0])
+    all_metrics=np.zeros((5,len(list_inputs),a.shape[1]))
+
+    for i in range(len(list_inputs)):
+        a=np.loadtxt(list_inputs[i])
+        all_metrics[0:4,i,:]=a
+    #first just using minimum in data
+    s1=np.unravel_index(np.argmin(all_metrics[3,:,:]),all_metrics[3,:,:].shape)
+    s2=np.argsort(all_metrics[3,:,:],axis=None)
+    if regression==True:
+        #to the minium seems fine for regression 
+        print(f"minimum of {round(all_metrics[3,s1[0],s1[1]],2)} points is at alpha={round(all_metrics[0,s1[0],s1[1]],2)} and max_depth={int(all_metrics[1,s1[0],s1[1]])}")
+        reg4=XGBRegressor(max_depth=int(all_metrics[1,s1[0],s1[1]]),reg_alpha=all_metrics[0,s1[0],s1[1]]).fit(feature_train, target_train)
+        #and save it
+        reg4.save_model(output_file_name)
+    else:
+        #for classification the minimum seems not good defined
+        #but many choices get a similar floor value. The actual minum is likely dependent on the eaxct test sample and thus not necessary reliable. To chose a more relaible, the following procedure is used. Quantile in the test sample are calcauted from 5% onwards in steps of 10%. For that only max depth 5 and larger is used because the minium is always is those for classification. 
+        #This quantiles are then used to define the allowed values of the test metric, it is always the one of 15%, it is enlarged, when the quantile slope is getting lower still outside of it. 
+        #That define the maximum allowed metric value
+        r=np.quantile(all_metrics[3,4:8,:],[0.05,0.15,0.25,0.35,0.45,0.55,0.65,0.75,0.85,0.95])
+        print("quantiles of larger max depth half")
+        print(r)
+        #use them until they get larger again but at least the first 15%
+        max_wrong=r[1]
+        c=0
+        while r[c+2]-r[c+1] <=(r[c+1]-r[0])/(1+c):
+            max_wrong=r[c+2]
+            c+=1
+        print(f"accepted percentage  is {round(100*max_wrong,2)}")  
+        #get maximum alpha within this limit, by increasing in alpha in loop start value is mimumum
+        #loop goes the other way in max_depth to have this as small as possible
+        value=[all_metrics[1,s1[0],s1[1]],all_metrics[0,s1[0],s1[1]]]
+        per=all_metrics[3,s1[0],s1[1]]
+        for j in range(all_metrics.shape[2]): 
+            for i in range(all_metrics.shape[1]):
+                if all_metrics[3,7-i,j]<=max_wrong:
+                    value[0]=all_metrics[1,7-i,j]
+                    value[1]=all_metrics[0,7-i,j] 
+                    per=all_metrics[3,7-i,j] 
+        print(f"minimum of {round(100*all_metrics[3,s1[0],s1[1]],2)} % is at alpha={round(all_metrics[0,s1[0],s1[1]],2)} and max_depth={int(all_metrics[1,s1[0],s1[1]])}")
+        print(f"used of {round(100*per,2)} % is at alpha={round(value[1],2)} and max_depth={int(value[0])}")        
+        reg4=XGBClassifier(max_depth=int(value[0]),reg_alpha=value[1]).fit(feature_train, target_train)
+        #and save it
+        reg4.save_model(output_file_name)  
