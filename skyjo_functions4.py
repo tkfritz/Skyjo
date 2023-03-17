@@ -665,6 +665,7 @@ def actions(player,players,pile,discarded,take_open, discard,silent=True,simulat
 #name of model, which column to be used, inut file1, index, open_card column, discard column, round_number, silent
 #optional second input file 
 #optinal adding a gausian random number to results
+#is not needed for level 9 and 11 since the best option is directly predicted 
 def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs,level,silent=True,input2=0,g_sigma=0):
     if n_inputs==1:
         #round 1 option
@@ -913,6 +914,10 @@ def vanish_check(player,silent=True):
             print("3 "+str(card1.number)+" vanish from Player")
     return card_needs_to_vanish        
 
+#function which gets the best option by using three different models on the current set up 
+#arguments 
+def choose_function(level,model_take,model_discard,model_value,columns,card_index,open_index,discard_index):
+    #
 
 #parameters: current player, all players (only needed for numeric output collection and for choosing startegry in some levels, closed_pile, discarded_pile, 
 #Currently implemented mode with levels 0, -1, -2, -3
@@ -924,10 +929,14 @@ def turn(player,players,pile,discarded,silent=True,output=False):
         #dictionaries here used level number to: models, column to be used, colomns of open, discard, index of card
         #for 2 players
         player_2models={1:level1_2players_model,2:level1_2players_model,3:level3_2players_model,4:level3_2players_model,5:level5_2players_model,6:level5_2players_model,7:level7_2players_model,8:level7_2players_model}
-        player_2columns={1:level1_2players_columns,2:level1_2players_columns,3:level1_2players_columns,4:level1_2players_columns,5:level5_2players_columns,6:level5_2players_columns,7:level1_2players_columns,8:level1_2players_columns}
-        player_2take_open={1:25,2:25,3:25,4:25,5:7,6:7,7:-25,8:-25} #negativ means it is in prel_selected 
-        player_2discard={1:26,2:26,3:26,4:26,5:8,6:8,7:-26,8:-26}
-        player_2index={1:28,2:28,3:28,4:28,5:-28,6:-28,7:-28,8:-28}  
+        #other model strcture for 9 and 11
+        player_2models_take={9:level9_2players_model_open,11:level11_2players_model_open}
+        player_2models_discard={9:level9_2players_model_discard,11:level11_2players_model_discard}
+        player_2models_value={9:level9_2players_model_value,11:level11_2players_model_value}
+        player_2columns={1:level1_2players_columns,2:level1_2players_columns,3:level1_2players_columns,4:level1_2players_columns,5:level5_2players_columns,6:level5_2players_columns,7:level1_2players_columns,8:level1_2players_columns,9:level1_2players_columns,11:level1_2players_columns}
+        player_2take_open={1:25,2:25,3:25,4:25,5:7,6:7,7:-25,8:-25,9:-25} #negativ means it is in prel_selected and gets rerranged before used in function
+        player_2discard={1:26,2:26,3:26,4:26,5:8,6:8,7:-26,8:-26,9:-26,11:-26}
+        player_2index={1:28,2:28,3:28,4:28,5:-28,6:-28,7:-28,8:-28,9:-28,11:-28}  
         #in level 0 random 50% choice of action
         if player.level==0:
             r_number1=random.random()
@@ -974,7 +983,11 @@ def turn(player,players,pile,discarded,silent=True,output=False):
                 if take_open==-1:
                     num1=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=1)
                     #gaussian npise here added when deternining best option
-                    take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],1,player.level,silent=silent,g_sigma=2)    
+                    take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],1,player.level,silent=silent,g_sigma=2)
+            #now model 9 and 11 which are different they use directly model to predict the actions and the cards  using new function choose_option       
+            if player.level==9 or player.level==11:
+                print(2)
+                take_open,discard,selected_card=choose_option(player.level,player_2models_take[player.level],player_2models_discard[player.level],player_2models_value[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level])
     #now action function
     if silent==False:
         print("player "+player.name+" turn")
@@ -1017,7 +1030,7 @@ def allowed_modes(names,nature,levels):
     nature_list = ['computer','human']    
     #list of allowed computer level for 2 players
     #less implemented for more players
-    comp_level_list2 = [8,7,6,5,4,3,2,1,0,-1,-2,-3]
+    comp_level_list2 = [11, 9, 8,7,6,5,4,3,2,1,0,-1,-2,-3]
     comp_level_list3 = [0,-1,-2,-3]
     comp_level_list4 = [0,-1,-2,-3]
     comp_level_list5 = [0,-1,-2,-3]
