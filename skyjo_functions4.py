@@ -3,12 +3,14 @@ import random as random
 #using simpleguitk for display, is not needed for computer game
 import simpleguitk as simplegui
 import time
-#new ones
 import pandas as pd
+#for machine learning
 from xgboost import XGBRegressor
+from xgboost import XGBClassifier
 from sklearn.linear_model import LinearRegression
+#checking ofr written files in saving human output
 import os
-#for sklearn programs
+#for sklearn output reading 
 import pickle
 
 #to supress sklearn warning that the columns have no names
@@ -30,6 +32,25 @@ level5_2players_model = XGBRegressor()
 level5_2players_model.load_model("xgb_model1eb.json")
 #level 7
 level7_2players_model= pickle.load(open('linear_feat_eng1.pkl', 'rb'))
+#level 9 and 11 (not sure whether random added works here but places left for it) have different models for take_open, discard and 
+level9_2players_model_open = XGBClassifier()
+level9_2players_model_open.load_model("xgb_open_hum1.json")
+
+level9_2players_model_discard = XGBClassifier()
+level9_2players_model_discard.load_model("xgb_discard_hum1.json")
+
+level9_2players_model_value = XGBRegressor()
+level9_2players_model_value.load_model("xgb_value_hum1.json")
+
+level11_2players_model_open = XGBClassifier()
+level11_2players_model_open.load_model("xgb_open_win1.json")
+
+level11_2players_model_discard = XGBClassifier()
+level11_2players_model_discard.load_model("xgb_discard_win1.json")
+
+level11_2players_model_value = XGBRegressor()
+level11_2players_model_value.load_model("xgb_value_win1.json")
+
 
 #cards of the game
 class Card:
