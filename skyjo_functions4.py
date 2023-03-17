@@ -221,7 +221,8 @@ class Player:
                 pos=list([self.positionx[i],self.positiony[i]])
                 self.list_cards[-1].set_position(pos) 
             #opening 2 cards, currently only open randomly is implemented
-            if level<10:
+            if level<100:
+                #not clear whether other option will really be used 
                 rang=list(range(12))
                 random.shuffle(rang)
                 self.list_cards[rang[0]].set_state(True)
@@ -237,7 +238,7 @@ class Player:
             self.list_cards[-1].set_state(False)
             pos=list([self.positionx[i],self.positiony[i]])
             self.list_cards[-1].set_position(pos) 
-        if self.level<10:
+        if self.level<100:
             rang=list(range(12))
             random.shuffle(rang)
             self.list_cards[rang[0]].set_state(True)
