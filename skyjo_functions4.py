@@ -933,9 +933,90 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
             print("directly predicting the best actions and card")
         #predict whether open card should be taken    , second row is dummy 
         action_take=model.predict(selected_open.T)  
-        print(action_take)
         if silent==False:
             print(f"take open card is {bool(action_take[0])}")
+        #return action, discard and card   
+        if bool(action_take[0])==True:
+            action_discard=False
+            #now card selection
+            selected_value=np.zeros((11,2))
+            #set max to below all possible values
+            selected_value[4,0]=-3
+            selected_value[8,0]=-3
+            selected_value[0,0]=prel_selected[0,0]
+            #check the 12 cards for agregate measures
+            for i in range(12):
+                #self player
+                if prel_selected[1+i,0]==20:
+                    selected_value[1,0]+=1
+                elif prel_selected[1+i,0]<20:
+                    selected_value[2,0]+=1
+                    selected_value[3,0]+=prel_selected[1+i,0]
+                    if selected_value[4,0]<prel_selected[1+i,0]:
+                        selected_value[4,0]+=prel_selected[1+i,0]
+                #other player    
+                if prel_selected[13+i,0]==20:
+                    selected_value[5,0]+=1
+                elif prel_selected[13+i,0]<20:
+                    selected_value[6,0]+=1
+                    selected_value[7,0]+=prel_selected[13+i,0]
+                    if selected_value[8,0]<prel_selected[13+i,0]:
+                        selected_value[8,0]+=prel_selected[13+i,0] 
+            #action open is one by select   
+            selected_value[9,0]=1
+            #discard value, set by select 
+            selected_value[10,0]=30
+            value=model_value.predict(selected_value.T)  
+            if silent==False:
+                #is a float thus closest real needs to be found 
+                print(f"predicted value of best card is {np.round(value[0],1)}")
+            #needs to return index closest card (index of player list)  
+            #new method likely not ideal 
+            list_values=[]
+            for i in range(12):
+                if prel_selected[1+i,0]!=20:
+                    list_values.append(prel_selected[1+i,0])
+                #change 20 (closed) to 5+1/15 in value_list 
+                else:
+                    list_values.append(5+1/15)
+            card_selected=np.argmin(abs(list_values-value[0]))
+            if silent==False:
+                print(f"actual played card has index {card_selected} and value {np.round(list_values[card_selected],1)}")                
+            return bool(action_take[0]), action_discard, card_selected
+        else:
+            #needs to get discard value before thhe rest can be done 
+            return -1, -1, -1
+            selected_discard=np.zeros((10,2))
+            #set max to below all possible values
+            selected_discard[4,0]=-3
+            selected_discard[8,0]=-3
+            selected_discard[0,0]=prel_selected[0,0]
+            #check the 12 cards for agregate measures
+            for i in range(12):
+                #self player
+                if prel_selected[1+i,0]==20:
+                    selected_discard[1,0]+=1
+                elif prel_selected[1+i,0]<20:
+                    selected_discard[2,0]+=1
+                    selected_discard[3,0]+=prel_selected[1+i,0]
+                    if selected_discard[4,0]<prel_selected[1+i,0]:
+                        selected_discard[4,0]+=prel_selected[1+i,0]
+                #other player    
+                if prel_selected[13+i,0]==20:
+                    selected_discard[5,0]+=1
+                elif prel_selected[13+i,0]<20:
+                    selected_discard[6,0]+=1
+                    selected_discard[7,0]+=prel_selected[13+i,0]
+                    if selected_discard[8,0]<prel_selected[13+i,0]:
+                        selected_discard[8,0]+=prel_selected[13+i,0]  
+            #discard value, but is not yet done here             
+            selected_discard[9,0]=prel_selected[27,0]
+            actions_discard=model_discard.predict(selected_discard.T)  
+            #first one is used actions 
+            action_discard=bool(actions_discard[0])
+            if silent==False:
+                print(f"discard closed card is {action_discard}")            
+        #return bool(action_take[0]), action_discard, card_selected
 
 #check whether cards need to vanish and applies it 
 def vanish_check(player,silent=True):
@@ -1022,12 +1103,10 @@ def turn(player,players,pile,discarded,silent=True,output=False):
                     #gaussian npise here added when deternining best option
                     take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],1,player.level,silent=silent,g_sigma=2)
             #now model 9 and 11 which are different they use directly model to predict the actions and the cards  use a different varaint of determine best option
-            if player.level==9 or player.level==11:
-                print(player_2models_take[player.level],player_2models_discard[player.level],player_2models_value[player.level],player_2columns[player.level],player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],player.level)  
+            if player.level==9 or player.level==11:  
                 #in principle only need num1 in the following, num2 is just ignored
-                num1,num2=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=0)
-                print(num1[:,0])       
-                take_open,discard,selected_card=determine_best_option(player_2models_take[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],3,player.level,model_discard=player_2models_discard[player.level],model_value=player_2models_value[player.level])
+                num1,num2=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=0)    
+                take_open,discard,selected_card=determine_best_option(player_2models_take[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],3,player.level,model_discard=player_2models_discard[player.level],model_value=player_2models_value[player.level],silent=silent)
     #now action function
     if silent==False:
         print("player "+player.name+" turn")
