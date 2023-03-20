@@ -1103,7 +1103,7 @@ def turn(player,players,pile,discarded,silent=True,output=False):
         player_2models_discard={9:level9_2players_model_discard,11:level11_2players_model_discard}
         player_2models_value={9:level9_2players_model_value,11:level11_2players_model_value}
         player_2columns={1:level1_2players_columns,2:level1_2players_columns,3:level1_2players_columns,4:level1_2players_columns,5:level5_2players_columns,6:level5_2players_columns,7:level1_2players_columns,8:level1_2players_columns,9:level1_2players_columns,11:level1_2players_columns}
-        player_2take_open={1:25,2:25,3:25,4:25,5:7,6:7,7:-25,8:-25,9:-25} #negativ means it is in prel_selected and gets rerranged before used in function
+        player_2take_open={1:25,2:25,3:25,4:25,5:7,6:7,7:-25,8:-25,9:-25,11:-25} #negativ means it is in prel_selected and gets rerranged before used in function
         player_2discard={1:26,2:26,3:26,4:26,5:8,6:8,7:-26,8:-26,9:-26,11:-26}
         player_2index={1:28,2:28,3:28,4:28,5:-28,6:-28,7:-28,8:-28,9:-28,11:-28}  
         #in level 0 random 50% choice of action
