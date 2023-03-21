@@ -32,7 +32,7 @@ level5_2players_model = XGBRegressor()
 level5_2players_model.load_model("xgb_model1eb.json")
 #level 7
 level7_2players_model= pickle.load(open('linear_feat_eng1.pkl', 'rb'))
-#level 9 and 11 (not sure whether random added works here but places left for it) have different models for take_open, discard and 
+#level 9 and 11 , 13 and 15(not sure whether random added works here but places left for it) have different models for take_open, discard and 
 level9_2players_model_open = XGBClassifier()
 level9_2players_model_open.load_model("xgb_open_hum1.json")
 
@@ -51,6 +51,23 @@ level11_2players_model_discard.load_model("xgb_discard_win1.json")
 level11_2players_model_value = XGBRegressor()
 level11_2players_model_value.load_model("xgb_value_win1.json")
 
+level13_2players_model_open = XGBClassifier()
+level13_2players_model_open.load_model("xgb_open_hum2.json")
+
+level13_2players_model_discard = XGBClassifier()
+level13_2players_model_discard.load_model("xgb_discard_hum2.json")
+
+level13_2players_model_value = XGBRegressor()
+level13_2players_model_value.load_model("xgb_value_hum2.json")
+
+level15_2players_model_open = XGBClassifier()
+level15_2players_model_open.load_model("xgb_open_win2.json")
+
+level15_2players_model_discard = XGBClassifier()
+level15_2players_model_discard.load_model("xgb_discard_win2.json")
+
+level15_2players_model_value = XGBRegressor()
+level15_2players_model_value.load_model("xgb_value_win2.json")
 
 #cards of the game
 class Card:
@@ -692,7 +709,7 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
     if level==7 or level==8:
         prel_selected=np.zeros((int(sum(columns)),input1.shape[1]))
         selected=np.zeros((7,input1.shape[1]))  
-    if  level==9 or level==11:
+    if  level==9 or level==11 or level==13 or level==15:
         ##second row is dummy row that cgb predict can be used 
         prel_selected=np.zeros((int(sum(columns)),2))
       
@@ -704,7 +721,7 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
                 selected[counter,:]=input1[i,:]
             if level==5 or  level==6 or  level==7 or  level==8:
                 prel_selected[counter,:]=input1[i,:]
-            if level==9 or  level==11:
+            if level==9 or  level==11 or level==13 or level==15:
                 prel_selected[counter,0]=input1[i,0]
             counter+=1
             
@@ -789,6 +806,19 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
                 selected_open[7,0]+=prel_selected[13+i,0]
                 if selected_open[8,0]<prel_selected[13+i,0]:
                     selected_open[8,0]+=prel_selected[13+i,0]      
+    if level==13 or level==15:
+        #first do whether open card is choosen 'open_pile_card', 'own_max'
+        #second row is dummy
+        selected_open=np.zeros((2,2))
+        #set max to below all possible values
+        selected_open[1,0]=-3
+        selected_open[0,0]=prel_selected[0,0]
+        #check the 12 cards for agregate measures
+        for i in range(12):
+            #self player
+            if prel_selected[1+i,0]<20:
+                if selected_open[1,0]<prel_selected[1+i,0]:
+                    selected_open[1,0]+=prel_selected[1+i,0]                   
     #for models until 8 predict the scores for all options in partly two iterations 
     if level<=8:
         #predict scores using xgb model, transposed needed for it     
@@ -930,8 +960,9 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
             if silent==False:
                 print(f"minimum is for using a closed card")   
             return -1, -1, -1 
-    #direct prediction of best actions and card    
-    if (level==9 or level==11) and n_inputs==3:
+    #direct prediction of best actions and card  
+    #is same for first and second version of human imitation
+    if (level==9 or level==11 or level==13 or level==15) and n_inputs==3:
         if silent==False:
             print("directly predicting the best actions and card")
         #predict whether open card should be taken    , second row is dummy 
@@ -990,32 +1021,48 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
             #needs to get discard value before thhe rest can be done 
             return -1, -1, -1
     #second part where value of card in face down pile is known      
-    if (level==9 or level==11) and n_inputs==4:
-        selected_discard=np.zeros((10,2))
-        #set max to below all possible values
-        selected_discard[4,0]=-3
-        selected_discard[8,0]=-3
-        selected_discard[0,0]=prel_selected[0,0]
-        #check the 12 cards for agregate measures
-        for i in range(12):
-            #self player
-            if prel_selected[1+i,0]==20:
-                selected_discard[1,0]+=1
-            elif prel_selected[1+i,0]<20:
-                selected_discard[2,0]+=1
-                selected_discard[3,0]+=prel_selected[1+i,0]
-                if selected_discard[4,0]<prel_selected[1+i,0]:
-                    selected_discard[4,0]+=prel_selected[1+i,0]
-            #other player    
-            if prel_selected[13+i,0]==20:
-                selected_discard[5,0]+=1
-            elif prel_selected[13+i,0]<20:
-                selected_discard[6,0]+=1
-                selected_discard[7,0]+=prel_selected[13+i,0]
-                if selected_discard[8,0]<prel_selected[13+i,0]:
-                    selected_discard[8,0]+=prel_selected[13+i,0]  
-        #discard value           
-        selected_discard[9,0]=prel_selected[27,0]
+    if (level==9 or level==11 or level==13 or level==15) and n_inputs==4:
+        #input for first version
+        if level==9 or level==11:
+            selected_discard=np.zeros((10,2))
+            #set max to below all possible values
+            selected_discard[4,0]=-3
+            selected_discard[8,0]=-3
+            selected_discard[0,0]=prel_selected[0,0]
+            #check the 12 cards for agregate measures
+            for i in range(12):
+                #self player
+                if prel_selected[1+i,0]==20:
+                    selected_discard[1,0]+=1
+                elif prel_selected[1+i,0]<20:
+                    selected_discard[2,0]+=1
+                    selected_discard[3,0]+=prel_selected[1+i,0]
+                    if selected_discard[4,0]<prel_selected[1+i,0]:
+                        selected_discard[4,0]+=prel_selected[1+i,0]
+                #other player    
+                if prel_selected[13+i,0]==20:
+                    selected_discard[5,0]+=1
+                elif prel_selected[13+i,0]<20:
+                    selected_discard[6,0]+=1
+                    selected_discard[7,0]+=prel_selected[13+i,0]
+                    if selected_discard[8,0]<prel_selected[13+i,0]:
+                        selected_discard[8,0]+=prel_selected[13+i,0]  
+            #discard value           
+            selected_discard[9,0]=prel_selected[27,0]
+        #input for second version
+        if level==13 or level==15:
+            selected_discard=np.zeros((2,2))
+            #uses 'own_max', 'discard_value'
+            #set max to below all possible values
+            selected_discard[0,0]=-3
+            #check the 12 cards for agregate measures
+            for i in range(12):
+                #self player
+                if prel_selected[1+i,0]<20:
+                    if selected_discard[0,0]<prel_selected[1+i,0]:
+                        selected_discard[0,0]+=prel_selected[1+i,0]
+            #discard value           
+            selected_discard[1,0]=prel_selected[27,0]            
         actions_discard=model_discard.predict(selected_discard.T)  
         #first one is used actions 
         action_discard=bool(actions_discard[0])
@@ -1099,13 +1146,13 @@ def turn(player,players,pile,discarded,silent=True,output=False):
         #for 2 players
         player_2models={1:level1_2players_model,2:level1_2players_model,3:level3_2players_model,4:level3_2players_model,5:level5_2players_model,6:level5_2players_model,7:level7_2players_model,8:level7_2players_model}
         #other model strcture for 9 and 11
-        player_2models_take={9:level9_2players_model_open,11:level11_2players_model_open}
-        player_2models_discard={9:level9_2players_model_discard,11:level11_2players_model_discard}
-        player_2models_value={9:level9_2players_model_value,11:level11_2players_model_value}
-        player_2columns={1:level1_2players_columns,2:level1_2players_columns,3:level1_2players_columns,4:level1_2players_columns,5:level5_2players_columns,6:level5_2players_columns,7:level1_2players_columns,8:level1_2players_columns,9:level1_2players_columns,11:level1_2players_columns}
-        player_2take_open={1:25,2:25,3:25,4:25,5:7,6:7,7:-25,8:-25,9:-25,11:-25} #negativ means it is in prel_selected and gets rerranged before used in function
-        player_2discard={1:26,2:26,3:26,4:26,5:8,6:8,7:-26,8:-26,9:-26,11:-26}
-        player_2index={1:28,2:28,3:28,4:28,5:-28,6:-28,7:-28,8:-28,9:-28,11:-28}  
+        player_2models_take={9:level9_2players_model_open,11:level11_2players_model_open,13:level13_2players_model_open,15:level15_2players_model_open}
+        player_2models_discard={9:level9_2players_model_discard,11:level11_2players_model_discard,13:level13_2players_model_discard,15:level15_2players_model_discard}
+        player_2models_value={9:level9_2players_model_value,11:level11_2players_model_value,13:level13_2players_model_value,15:level15_2players_model_value}
+        player_2columns={1:level1_2players_columns,2:level1_2players_columns,3:level1_2players_columns,4:level1_2players_columns,5:level5_2players_columns,6:level5_2players_columns,7:level1_2players_columns,8:level1_2players_columns,9:level1_2players_columns,11:level1_2players_columns,13:level1_2players_columns,15:level1_2players_columns}
+        player_2take_open={1:25,2:25,3:25,4:25,5:7,6:7,7:-25,8:-25,9:-25,11:-25,13:-25,15:-25} #negativ means it is in prel_selected and gets rerranged before used in function
+        player_2discard={1:26,2:26,3:26,4:26,5:8,6:8,7:-26,8:-26,9:-26,11:-26,13:-26,15:-26}
+        player_2index={1:28,2:28,3:28,4:28,5:-28,6:-28,7:-28,8:-28,9:-28,11:-28,13:-28,15:-28}  
         #in level 0 random 50% choice of action
         if player.level==0:
             r_number1=random.random()
@@ -1153,8 +1200,8 @@ def turn(player,players,pile,discarded,silent=True,output=False):
                     num1=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=1)
                     #gaussian npise here added when deternining best option
                     take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],1,player.level,silent=silent,g_sigma=2)
-            #now model 9 and 11 which are different they use directly model to predict the actions and the cards  use a different variant of determine best option
-            if player.level==9 or player.level==11:  
+            #now model 9 and 11, 13, 15 which are different they use directly model to predict the actions and the cards  use a different variant of determine best option
+            if player.level==9 or player.level==11 or player.level==13 or player.level==15 :  
                 #in principle only need num1 in the following, num2 is just ignored
                 num1,num2=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=0)    
                 take_open,discard,selected_card=determine_best_option(player_2models_take[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],3,player.level,model_discard=player_2models_discard[player.level],model_value=player_2models_value[player.level],silent=silent)
@@ -1204,7 +1251,7 @@ def allowed_modes(names,nature,levels):
     nature_list = ['computer','human']    
     #list of allowed computer level for 2 players
     #less implemented for more players
-    comp_level_list2 = [11, 9, 8,7,6,5,4,3,2,1,0,-1,-2,-3]
+    comp_level_list2 = [15,13,11, 9, 8,7,6,5,4,3,2,1,0,-1,-2,-3]
     comp_level_list3 = [0,-1,-2,-3]
     comp_level_list4 = [0,-1,-2,-3]
     comp_level_list5 = [0,-1,-2,-3]
@@ -1830,7 +1877,8 @@ global mousepos,player, canvas, card_c, step, in_play, counter, endcounter, end_
 #define player parameters
 names=('Human','Computer')
 mode=('human','computer')
-level=(1,5)
+#second level choose chooses computer level 
+level=(1,13)
 #create pile and players
 pile_closed=Pile('create_closed',False)
 pile_open=Pile('create_open',pile_closed)
