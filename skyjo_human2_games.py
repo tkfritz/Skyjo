@@ -69,6 +69,10 @@ level15_2players_model_discard.load_model("xgb_discard_win2.json")
 level15_2players_model_value = XGBRegressor()
 level15_2players_model_value.load_model("xgb_value_win2.json")
 
+#level 17
+level17_2players_model = XGBRegressor()
+level17_2players_model.load_model("xgb_model17.json")
+
 #cards of the game
 class Card:
     #initiate cards
@@ -702,8 +706,8 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
     #just use all marked for level 1 to 4
     if level<=4:
         selected=np.zeros((int(sum(columns)),input1.shape[1]))
-    #is transformed to 13 length  and needs also preliminary array   
-    if level==5 or level==6:
+    #for the levels below it is transformed to 11 length  and needs also preliminary array   
+    if level==5 or level==6 or level==17 or level==18:
         prel_selected=np.zeros((int(sum(columns)),input1.shape[1]))
         selected=np.zeros((11,input1.shape[1]))
     if level==7 or level==8:
@@ -725,8 +729,8 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
                 prel_selected[counter,0]=input1[i,0]
             counter+=1
             
-    #now tranform prel_selected to selected for level 5 and 6
-    if level==5 or  level==6:
+    #now tranform prel_selected to selected for level 5 and 6, 17 18
+    if level==5 or  level==6 or level==17 or level==18:
         #first open pile card as some just copied 
         selected[0,:]=prel_selected[0,:]
         #now own_n_closed  own_n_open  own_sum and of other player the same 
@@ -819,8 +823,8 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
             if prel_selected[1+i,0]<20:
                 if selected_open[1,0]<prel_selected[1+i,0]:
                     selected_open[1,0]+=prel_selected[1+i,0]                   
-    #for models until 8 predict the scores for all options in partly two iterations 
-    if level<=8:
+    #for models until 8 and 17 and 18  predict the scores for all options in partly two iterations 
+    if level<=8 or level==17 or level==18:
         #predict scores using xgb model, transposed needed for it     
         pred_scores1=model.predict(selected.T)
         if take_open>=0:
@@ -852,7 +856,7 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
                 #get prediction for all possible closed card values
                 if level<=4:
                     selected=np.zeros((int(sum(columns)),15))
-                if level==5 or level==6:
+                if level==5 or level==6 or level==17 or level==18:
                     prel_selected=np.zeros((int(sum(columns)),15))
                     selected=np.zeros((11,15))
                 if level==7 or level==8:
@@ -867,7 +871,7 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
                         if level==5 or  level==6:
                             prel_selected[counter,:]=input2[:,i,k]
                         counter+=1
-                if level==5 or level==6:      
+                if level==5 or level==6 or level==17 or level==18:      
                     #first open pile card as some just copied 
                     selected[0,:]=prel_selected[0,:]
                     #now own_n_closed  own_n_open  own_sum and of other player the same     
@@ -1144,15 +1148,15 @@ def turn(player,players,pile,discarded,silent=True,output=False):
     if player.mode=='computer':
         #dictionaries here used level number to: models, column to be used, colomns of open, discard, index of card
         #for 2 players
-        player_2models={1:level1_2players_model,2:level1_2players_model,3:level3_2players_model,4:level3_2players_model,5:level5_2players_model,6:level5_2players_model,7:level7_2players_model,8:level7_2players_model}
-        #other model strcture for 9 and 11
+        player_2models={1:level1_2players_model,2:level1_2players_model,3:level3_2players_model,4:level3_2players_model,5:level5_2players_model,6:level5_2players_model,7:level7_2players_model,8:level7_2players_model,17:level17_2players_model,18:level17_2players_model}
+        #other model strcture for 9 and 11, 13 15
         player_2models_take={9:level9_2players_model_open,11:level11_2players_model_open,13:level13_2players_model_open,15:level15_2players_model_open}
         player_2models_discard={9:level9_2players_model_discard,11:level11_2players_model_discard,13:level13_2players_model_discard,15:level15_2players_model_discard}
         player_2models_value={9:level9_2players_model_value,11:level11_2players_model_value,13:level13_2players_model_value,15:level15_2players_model_value}
-        player_2columns={1:level1_2players_columns,2:level1_2players_columns,3:level1_2players_columns,4:level1_2players_columns,5:level5_2players_columns,6:level5_2players_columns,7:level1_2players_columns,8:level1_2players_columns,9:level1_2players_columns,11:level1_2players_columns,13:level1_2players_columns,15:level1_2players_columns}
-        player_2take_open={1:25,2:25,3:25,4:25,5:7,6:7,7:-25,8:-25,9:-25,11:-25,13:-25,15:-25} #negativ means it is in prel_selected and gets rerranged before used in function
-        player_2discard={1:26,2:26,3:26,4:26,5:8,6:8,7:-26,8:-26,9:-26,11:-26,13:-26,15:-26}
-        player_2index={1:28,2:28,3:28,4:28,5:-28,6:-28,7:-28,8:-28,9:-28,11:-28,13:-28,15:-28}  
+        player_2columns={1:level1_2players_columns,2:level1_2players_columns,3:level1_2players_columns,4:level1_2players_columns,5:level5_2players_columns,6:level5_2players_columns,7:level1_2players_columns,8:level1_2players_columns,9:level1_2players_columns,11:level1_2players_columns,13:level1_2players_columns,15:level1_2players_columns,17:level1_2players_columns,18:level1_2players_columns}
+        player_2take_open={1:25,2:25,3:25,4:25,5:7,6:7,7:-25,8:-25,9:-25,11:-25,13:-25,15:-25,17:7,18:7} #negativ means it is in prel_selected and gets rerranged before used in function
+        player_2discard={1:26,2:26,3:26,4:26,5:8,6:8,7:-26,8:-26,9:-26,11:-26,13:-26,15:-26,17:8,18:8}
+        player_2index={1:28,2:28,3:28,4:28,5:-28,6:-28,7:-28,8:-28,9:-28,11:-28,13:-28,15:-28,17:-28,18:-28}  
         #in level 0 random 50% choice of action
         if player.level==0:
             r_number1=random.random()
@@ -1181,7 +1185,7 @@ def turn(player,players,pile,discarded,silent=True,output=False):
                 discard=True
         #logic is the same for all current levels differences in determine_best_option
         if len(players)==2:
-            if player.level==1 or player.level==3 or player.level==5 or player.level==7:
+            if player.level==1 or player.level==3 or player.level==5 or player.level==7 or player.level==17:
                 #simulations are done first, taken_open and discard are meaning less here
                 num1,num2=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=0)
                 take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],2,player.level,silent=silent,input2=num2)
@@ -1190,7 +1194,7 @@ def turn(player,players,pile,discarded,silent=True,output=False):
                     num1=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=1)
                     take_open,discard,selected_card=determine_best_option(player_2models[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],1,player.level,silent=silent)   
             #this is the same as before but adds gaussian noise
-            if player.level==2 or player.level==4 or player.level==6 or player.level==8:
+            if player.level==2 or player.level==4 or player.level==6 or player.level==8  or player.level==18:
                 #simulations are done first, taken_open and discard are meaning less here
                 num1,num2=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=0)
                 #gassuan noise added in determoine best option
@@ -1251,7 +1255,7 @@ def allowed_modes(names,nature,levels):
     nature_list = ['computer','human']    
     #list of allowed computer level for 2 players
     #less implemented for more players
-    comp_level_list2 = [15,13,11, 9, 8,7,6,5,4,3,2,1,0,-1,-2,-3]
+    comp_level_list2 = [18,17,15,13,11, 9, 8,7,6,5,4,3,2,1,0,-1,-2,-3]
     comp_level_list3 = [0,-1,-2,-3]
     comp_level_list4 = [0,-1,-2,-3]
     comp_level_list5 = [0,-1,-2,-3]
@@ -1871,14 +1875,13 @@ def mouseclick(pos):
                     file_name=name_string+str(length+1)+".txt"                
                 np.savetxt(file_name,final)            
 
-
-
+#block needed to be added for human games 
 global mousepos,player, canvas, card_c, step, in_play, counter, endcounter, end_score, finisher, players, names, mode, level, silent,numeric, discard, take_open, tot_score, listnum, in_game, in_round
 #define player parameters
 names=('Human','Computer')
 mode=('human','computer')
 #second level choose chooses computer level 
-level=(1,13)
+level=(1,17)
 #create pile and players
 pile_closed=Pile('create_closed',False)
 pile_open=Pile('create_open',pile_closed)
