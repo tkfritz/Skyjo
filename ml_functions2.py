@@ -266,3 +266,20 @@ def find_best(list_inputs,feature_train,target_train,output_file_name,regression
         reg4=XGBClassifier(max_depth=int(value[0]),reg_alpha=value[1]).fit(feature_train, target_train)
         #and save it
         reg4.save_model(output_file_name)  
+
+def lists_arrays_to_one(listf,int2=True):
+    #determine length of output
+    c=0
+    for i in range(len(listf)):
+        c+=listf[i].shape[1]
+        #create array
+    ar=np.zeros((listf[0].shape[0],c))   
+    c=0
+    #now fill it
+    for i in range(len(listf)):
+        if int2==True:
+            ar[:,c:c+listf[i].shape[1]]=np.round(listf[i])
+        else:
+            ar[:,c:c+listf[i].shape[1]]=np.round(listf[i])
+        c+=listf[i].shape[1]
+    return ar   
