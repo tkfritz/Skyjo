@@ -283,3 +283,8 @@ def lists_arrays_to_one(listf,int2=True):
             ar[:,c:c+listf[i].shape[1]]=np.round(listf[i])
         c+=listf[i].shape[1]
     return ar   
+
+def logistic_function(coefs,data):
+    res=1/(1+np.exp(-coefs[0]-np.matmul(coefs[1:coefs.shape[0]],data)))
+    return res
+
