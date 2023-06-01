@@ -22,8 +22,8 @@ Here I mean the implementing and the functionality of creating the game. This in
 ## Machine Learning for Skyjo
 
 
-The first explorative machine learning is in machine_learning_skyjo1.ipynb. The first part where you can see the machine is actually learning is in machine_learning_skyjo2.ipynb. In order to achieve this result, functions are developed which are stored in ml_functions1.py and ml_functions2.py (the newer) version. For the next machine learning step more data is produced with produce_data_for_machine_learning.py It is used in machine_learning_skyjo3.ipynb. The output of it is analysed in machine_learning4.ipynb It does not improve the performance both against the computer nor against human, the reason is likely that Ito mainly learns to predict the choice of the algorithm used by level 1 and not which option is actually better. Therefore, I am currently trying other options again for now based on the random data. 
+The first explorative machine learning is in machine_learning_skyjo1.ipynb. The first part where you can see the machine is actually learning is in machine_learning_skyjo2.ipynb. In order to achieve this result, functions are developed which are stored in ml_functions1.py and ml_functions2.py (the newer) version. For the next machine learning step more data is produced with produce_data_for_machine_learning.py It is used in machine_learning_skyjo3.ipynb. The output of it is analysed in machine_learning4.ipynb. It does not improve the performance both against the computer nor against human, the reason is likely that Ito mainly learns to predict the choice of the algorithm used by level 1 and not which option is actually better.
 Future games of human versus the computer are analyzed in analyzing_human1.ipynb. 
-
+None of them lead to improvements compared to the first improved. I am now working on improving the computer against other computers using new methods in optimization_developement.ipynb
 
 
