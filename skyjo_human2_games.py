@@ -696,6 +696,7 @@ def actions(player,players,pile,discarded,take_open, discard,silent=True,simulat
 #name of model, which column to be used, inut file1, index, open_card column, discard column, round_number, silent
 #optional second input file 
 #optinal adding a gausian random number to results
+
 def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs,level,silent=True,input2=0,g_sigma=0,model_discard=0,model_value=0):
     if n_inputs==1:
         #round 1 option
@@ -724,9 +725,14 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
         prel_selected=np.zeros((int(sum(columns)),input1.shape[1]))
         selected=np.zeros((7,input1.shape[1]))  
     if  level==9 or level==11 or level==13 or level==15 or level==19:
-        ##second row is dummy row that cgb predict can be used 
+        ##second row is dummy row that xgb predict can be used 
         prel_selected=np.zeros((int(sum(columns)),2))
-      
+        
+    if level==20 or level==21 or level==22:
+        ##no dummy row because onw logistic used 
+        prel_selected=np.zeros((int(sum(columns)),1))
+
+        
     #get the right columns
     counter=0
     for i in range(input1.shape[0]):
@@ -735,7 +741,8 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
                 selected[counter,:]=input1[i,:]
             if level==5 or  level==6 or  level==7 or  level==8:
                 prel_selected[counter,:]=input1[i,:]
-            if level==9 or  level==11 or level==13 or level==15 or level==19:
+            #20 correct here?     
+            if level==9 or  level==11 or level==13 or level==15 or level==19 or level==20 or level==21 or level==22:
                 prel_selected[counter,0]=input1[i,0]
             counter+=1
             
@@ -764,6 +771,7 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
         #at the end again copied  action_take_open  action_discard   discard_value gap  numeric_player_card
         selected[selected.shape[0]-4:selected.shape[0]-1,:]=prel_selected[prel_selected.shape[0]-5:prel_selected.shape[0]-2,:]
         selected[selected.shape[0]-1,:]=prel_selected[prel_selected.shape[0]-1,:]
+
     #now tranform prel_selected to selected for level 7 and 8   
     if level==7 or  level==8:
         #'own_n_closed', 'other_player_n_closed', 'current_score_diff', 'all_actions', 'own_ncl_action', 'other_ncl_action', 'squared_action' 
@@ -832,7 +840,26 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
             #self player
             if prel_selected[1+i,0]<20:
                 if selected_open[1,0]<prel_selected[1+i,0]:
-                    selected_open[1,0]+=prel_selected[1+i,0]                   
+                    selected_open[1,0]+=prel_selected[1+i,0]    
+    #now tranform prel_selected to selected_open for level 20, 21, 22 is identical but gives option to use different parameters
+    if level==20 or level==21 or level==22:
+        #first do whether open card is choosen 'open_pile_card', 'own_n_closed',
+        #'own_sum',
+        # 'other_player_n_closed', 'other_player_sum'
+        selected_open=np.zeros((5,1))
+        selected_open[0,0]=prel_selected[0,0]
+        #check the 12 cards for agregate measures
+        for i in range(12):
+            #self player
+            if prel_selected[1+i,0]==20:
+                selected_open[1,0]+=1
+            elif prel_selected[1+i,0]<20:
+                selected_open[2,0]+=prel_selected[1+i,0]
+            #other player    
+            if prel_selected[13+i,0]==20:
+                selected_open[3,0]+=1            
+            elif prel_selected[13+i,0]<20:
+                selected_open[4,0]+=prel_selected[13+i,0]                      
     #for models until 8 and 17 and 18  predict the scores for all options in partly two iterations 
     if level<=8 or level==17 or level==18:
         #predict scores using xgb model, transposed needed for it     
@@ -846,12 +873,12 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
         else:
             all_scores[1,:input1.shape[1]]=prel_selected.T[:,-discard]
         if index>=0:
-           all_scores[3,:input1.shape[1]]=selected.T[:,index]
+            all_scores[3,:input1.shape[1]]=selected.T[:,index]
         else:
            #from preliminary file since only there is index 
            all_scores[3,:input1.shape[1]]=prel_selected.T[:,-index]        
         if g_sigma==0:
-           all_scores[2,:input1.shape[1]]=pred_scores1
+            all_scores[2,:input1.shape[1]]=pred_scores1
         #if noise added    
         else:
             for j in range(input1.shape[1]):
@@ -976,16 +1003,201 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
             return -1, -1, -1 
     #direct prediction of best actions and card  
     #is same for first and second version of human imitation
-    if (level==9 or level==11 or level==13 or level==15 or level==19) and n_inputs==3:
+    if (level==9 or level==11 or level==13 or level==15 or level==19 or level==20 or level==21 or level==22) and n_inputs==3:
         if silent==False:
             print("directly predicting the best actions and card")
         #predict whether open card should be taken    , second row is dummy 
-        action_take=model.predict(selected_open.T)  
+        if level<19.5:
+            actions_take=model.predict(selected_open.T)  
+            #first one is used 
+            action_take=actions_take[0]
+        #use of logistic function for 20 does that work with model here 
+        if level==20 or level==21 or level==22:
+            ran=random.random()
+            if ran>0.1:
+                #random here to make changes less abrupt especially for interceopt of 0
+                action_take=np.round(logistic_function(model,selected_open)+(0.02*random.random()-0.01))
+            #not always done to add some randomness especially  for avoiding  inifite games 
+            else:
+                action_take=np.round(10*ran)
         if silent==False:
-            print(f"take open card is {bool(action_take[0])}")
+            print(f"take open card is {bool(action_take)}")
         #return action, discard and card   
-        if bool(action_take[0])==True:
+        if bool(action_take)==True:
             action_discard=False
+            if level<19.5:
+                #now card selection
+                selected_value=np.zeros((11,2))
+                #set max to below all possible values
+                selected_value[4,0]=-3
+                selected_value[8,0]=-3
+                selected_value[0,0]=prel_selected[0,0]
+                #check the 12 cards for agregate measures                
+                for i in range(12):
+                    #self player
+                    if prel_selected[1+i,0]==20:
+                        selected_value[1,0]+=1
+                    elif prel_selected[1+i,0]<20:
+                        selected_value[2,0]+=1
+                        selected_value[3,0]+=prel_selected[1+i,0]
+                        if selected_value[4,0]<prel_selected[1+i,0]:
+                            selected_value[4,0]+=prel_selected[1+i,0]
+                    #other player    
+                    if prel_selected[13+i,0]==20:
+                        selected_value[5,0]+=1
+                    elif prel_selected[13+i,0]<20:
+                        selected_value[6,0]+=1
+                        selected_value[7,0]+=prel_selected[13+i,0]
+                        if selected_value[8,0]<prel_selected[13+i,0]:
+                            selected_value[8,0]+=prel_selected[13+i,0] 
+            elif level==20 or level==21 or level==22:
+                #now card selection
+                selected_value=np.zeros((6,1))
+                selected_value[0,0]=prel_selected[0,0]
+                #max start value starts ? problem is it can be not existent set to -3 which needs to consider separately
+                selected_value[5,0]=-3
+                for i in range(12):
+                    #self player
+                    if prel_selected[1+i,0]==20:
+                        selected_value[1,0]+=1
+                    elif prel_selected[1+i,0]<20:
+                        selected_value[2,0]+=prel_selected[1+i,0]
+                        if prel_selected[1+i,0]>selected_value[5,0]:
+                            selected_value[5,0]=prel_selected[1+i,0]
+                    #other player    
+                    if prel_selected[13+i,0]==20:
+                        selected_value[3,0]+=1
+                    elif prel_selected[13+i,0]<20:
+                        selected_value[4,0]+=prel_selected[13+i,0]                           
+            if level<19.5:
+                value=model_value.predict(selected_value.T)  
+            elif level==20 or level==21 or level==22:
+                #if no open cards choose closed
+                if selected_value[5,0]==-3:
+                    value=0
+                else:  
+                    ran=random.random()
+                    if ran>0.1:
+                        value=np.round(logistic_function(model_value,selected_value)+(0.02*random.random()-0.01))
+                    else:
+                        value=np.round(ran*10)                        
+            if silent==False and level==19.5:
+                #is a float thus closest real needs to be found 
+                print(f"predicted value of best card is {np.round(value[0],1)}")
+            if silent==False and (level==20 or level==21 or level==22):
+                if value==0:
+                    print(f"closed card is choosen option")                    
+                else:
+                    print(f"maximum value of {selected_value[5,0]} is choosen option") 
+            if level<19.5:        
+                #needs to return index closest card (index of player list)  
+                #new method likely not ideal 
+                list_values=[]
+                for i in range(12):
+                    if prel_selected[1+i,0]!=20:
+                        list_values.append(prel_selected[1+i,0])
+                    #change 20 (closed) to 5+1/15 in value_list 
+                    else:
+                        list_values.append(5+1/15)
+                card_selected=np.argmin(abs(np.array(list_values)-value[0]))
+            if level==20 or level==21 or level==22:        
+                #needs to return index closest card (index of player list)  
+                #new method likely not ideal 
+                list_values=[]
+                for i in range(12):
+                    if prel_selected[1+i,0]!=20:
+                        list_values.append(prel_selected[1+i,0])
+                    #change 20 (closed) to 5+1/15 in value_list 
+                    else:
+                        list_values.append(5+1/15)
+                #closed card selected         
+                if value==0:        
+                    card_selected=np.argmin(np.abs(np.array(list_values)-(5+1/15)))
+                else:  
+                    card_selected=np.argmin(abs(list_values-(selected_value[5,0])))
+            if silent==False:
+                print(f"actual played card has index {card_selected} and value {np.round(list_values[card_selected],1)}")                       
+            return bool(action_take), action_discard, card_selected
+        else:
+            #needs to get discard value before thhe rest can be done 
+            return -1, -1, -1
+    #direct prediction of best actions and card  
+
+    #second part where value of card in face down pile is known      
+    if (level==9 or level==11 or level==13 or level==15 or level==19 or level==20 or level==21 or level==22) and n_inputs==4:
+        #input for first version
+        if level==9 or level==11 or level==19:
+            selected_discard=np.zeros((10,2))
+            #set max to below all possible values
+            selected_discard[4,0]=-3
+            selected_discard[8,0]=-3
+            selected_discard[0,0]=prel_selected[0,0]
+            #check the 12 cards for agregate measures
+            for i in range(12):
+                #self player
+                if prel_selected[1+i,0]==20:
+                    selected_discard[1,0]+=1
+                elif prel_selected[1+i,0]<20:
+                    selected_discard[2,0]+=1
+                    selected_discard[3,0]+=prel_selected[1+i,0]
+                    if selected_discard[4,0]<prel_selected[1+i,0]:
+                        selected_discard[4,0]+=prel_selected[1+i,0]
+                #other player    
+                if prel_selected[13+i,0]==20:
+                    selected_discard[5,0]+=1
+                elif prel_selected[13+i,0]<20:
+                    selected_discard[6,0]+=1
+                    selected_discard[7,0]+=prel_selected[13+i,0]
+                    if selected_discard[8,0]<prel_selected[13+i,0]:
+                        selected_discard[8,0]+=prel_selected[13+i,0]  
+            #discard value           
+            selected_discard[9,0]=prel_selected[27,0]
+        #input for second version
+        elif level==13 or level==15:
+            selected_discard=np.zeros((2,2))
+            #uses 'own_max', 'discard_value'
+            #set max to below all possible values
+            selected_discard[0,0]=-3
+            #check the 12 cards for agregate measures
+            for i in range(12):
+                #self player
+                if prel_selected[1+i,0]<20:
+                    if selected_discard[0,0]<prel_selected[1+i,0]:
+                        selected_discard[0,0]+=prel_selected[1+i,0]
+            #discard value           
+            selected_discard[1,0]=prel_selected[27,0]    
+        elif level==20 or level==21 or level==22:    
+            #first do whether open card is choosen 'discard_value', 'own_n_closed',
+            #'own_sum',
+            # 'other_player_n_closed', 'other_player_sum'
+            selected_discard=np.zeros((5,1))
+            selected_discard[0,0]=prel_selected[27,0]
+            #check the 12 cards for agregate measures
+            for i in range(12):
+                #self player
+                if prel_selected[1+i,0]==20:
+                    selected_discard[1,0]+=1
+                elif prel_selected[1+i,0]<20:
+                    selected_discard[2,0]+=prel_selected[1+i,0]
+                #other player    
+                if prel_selected[13+i,0]==20:
+                    selected_discard[3,0]+=1            
+                elif prel_selected[13+i,0]<20:
+                    selected_discard[4,0]+=prel_selected[13+i,0] 
+        if level<19.5:        
+            actions_discard=model_discard.predict(selected_discard.T)
+            #first one is used actions 
+            action_discard=bool(actions_discard[0])
+        #for active applying optimization    
+        elif level==20 or level==21 or level==22: 
+            ran=random.random()
+            if ran>0.1:
+                action_discard=np.round(logistic_function(model_discard,selected_discard)+(0.02*random.random()-0.01))
+            else:
+                action_discard=np.round(ran*10)
+        if silent==False:
+            print(f"discard closed card is {action_discard}")  
+        if level<19.5 and action_discard==False:    
             #now card selection
             selected_value=np.zeros((11,2))
             #set max to below all possible values
@@ -1028,103 +1240,81 @@ def determine_best_option(model,columns,input1,index, take_open,discard,n_inputs
                 else:
                     list_values.append(5+1/15)
             card_selected=np.argmin(abs(list_values-value[0]))
-            if silent==False:
-                print(f"actual played card has index {card_selected} and value {np.round(list_values[card_selected],1)}")                
-            return bool(action_take[0]), action_discard, card_selected
-        else:
-            #needs to get discard value before thhe rest can be done 
-            return -1, -1, -1
-    #second part where value of card in face down pile is known      
-    if (level==9 or level==11 or level==13 or level==15 or level==19) and n_inputs==4:
-        #input for first version
-        if level==9 or level==11 or level==19:
-            selected_discard=np.zeros((10,2))
-            #set max to below all possible values
-            selected_discard[4,0]=-3
-            selected_discard[8,0]=-3
-            selected_discard[0,0]=prel_selected[0,0]
-            #check the 12 cards for agregate measures
+        #if card discard closed card need to be selected , that was forgotten before(all were set to closed card)    
+        if level<19.5 and action_discard==True:    
+            #needs to return  closed card (index of player list)  
+            #new method likely not ideal 
+            list_values=[]
+            for i in range(12):
+                if prel_selected[1+i,0]!=20:
+                    list_values.append(prel_selected[1+i,0])
+                #change 20 (closed) to 5+1/15 in value_list 
+                else:
+                    list_values.append(5+1/15)
+            card_selected=np.argmin(np.abs(np.array(list_values)-(5+1/15)))    
+        #same as above in using open just different value for pile card used     
+        if (level==20 or level==21 or level==22) and action_discard==False:
+            #now card selection
+            selected_value=np.zeros((6,1))
+            #discard value, then own_n_closed, own_sum, other_n_closed, other_sum, own_max
+            selected_value[0,0]=prel_selected[27,0]
+            #max start value starts ? problem is it can be not existent set to -3 which needs to consider separately
+            selected_value[5,0]=-3
             for i in range(12):
                 #self player
                 if prel_selected[1+i,0]==20:
-                    selected_discard[1,0]+=1
+                    selected_value[1,0]+=1
                 elif prel_selected[1+i,0]<20:
-                    selected_discard[2,0]+=1
-                    selected_discard[3,0]+=prel_selected[1+i,0]
-                    if selected_discard[4,0]<prel_selected[1+i,0]:
-                        selected_discard[4,0]+=prel_selected[1+i,0]
+                    selected_value[2,0]+=prel_selected[1+i,0]
+                    if prel_selected[1+i,0]>selected_value[5,0]:
+                        selected_value[5,0]=prel_selected[1+i,0]
                 #other player    
                 if prel_selected[13+i,0]==20:
-                    selected_discard[5,0]+=1
+                    selected_value[3,0]+=1
                 elif prel_selected[13+i,0]<20:
-                    selected_discard[6,0]+=1
-                    selected_discard[7,0]+=prel_selected[13+i,0]
-                    if selected_discard[8,0]<prel_selected[13+i,0]:
-                        selected_discard[8,0]+=prel_selected[13+i,0]  
-            #discard value           
-            selected_discard[9,0]=prel_selected[27,0]
-        #input for second version
-        if level==13 or level==15:
-            selected_discard=np.zeros((2,2))
-            #uses 'own_max', 'discard_value'
-            #set max to below all possible values
-            selected_discard[0,0]=-3
-            #check the 12 cards for agregate measures
+                    selected_value[4,0]+=prel_selected[13+i,0]          
+            #if no open cards choose closed
+            if selected_value[5,0]==-3:
+                value=0
+            else:   
+                ran=random.random()
+                if ran>0.9:
+                    value=np.round(logistic_function(model_value,selected_value)+(0.02*random.random()-0.01))
+                else:
+                    value=np.round(10*ran)
+            if silent==False:
+                if value==0:
+                    print(f"closed card is choosen option")                    
+                else:
+                    print(f"maximum value of {selected_value[5,0]} is choosen option")     
+            #needs to return index closest card (index of player list)  
+            #new method likely not ideal 
+            list_values=[]
             for i in range(12):
-                #self player
-                if prel_selected[1+i,0]<20:
-                    if selected_discard[0,0]<prel_selected[1+i,0]:
-                        selected_discard[0,0]+=prel_selected[1+i,0]
-            #discard value           
-            selected_discard[1,0]=prel_selected[27,0]            
-        actions_discard=model_discard.predict(selected_discard.T)  
-        #first one is used actions 
-        action_discard=bool(actions_discard[0])
-        if silent==False:
-            print(f"discard closed card is {action_discard}")  
-        action_discard=False
-        #now card selection
-        selected_value=np.zeros((11,2))
-        #set max to below all possible values
-        selected_value[4,0]=-3
-        selected_value[8,0]=-3
-        selected_value[0,0]=prel_selected[0,0]
-        #check the 12 cards for agregate measures
-        for i in range(12):
-            #self player
-            if prel_selected[1+i,0]==20:
-                selected_value[1,0]+=1
-            elif prel_selected[1+i,0]<20:
-                selected_value[2,0]+=1
-                selected_value[3,0]+=prel_selected[1+i,0]
-                if selected_value[4,0]<prel_selected[1+i,0]:
-                    selected_value[4,0]+=prel_selected[1+i,0]
-            #other player    
-            if prel_selected[13+i,0]==20:
-                selected_value[5,0]+=1
-            elif prel_selected[13+i,0]<20:
-                selected_value[6,0]+=1
-                selected_value[7,0]+=prel_selected[13+i,0]
-                if selected_value[8,0]<prel_selected[13+i,0]:
-                    selected_value[8,0]+=prel_selected[13+i,0] 
-        #action open is one by select   
-        selected_value[9,0]=1
-        #discard value, set by select 
-        selected_value[10,0]=30
-        value=model_value.predict(selected_value.T)  
-        if silent==False:
-            #is a float thus closest real needs to be found 
-            print(f"predicted value of best card is {np.round(value[0],1)}")
-        #needs to return index closest card (index of player list)  
-        #new method likely not ideal 
-        list_values=[]
-        for i in range(12):
-            if prel_selected[1+i,0]!=20:
-                list_values.append(prel_selected[1+i,0])
-            #change 20 (closed) to 5+1/15 in value_list 
-            else:
-                list_values.append(5+1/15)
-        card_selected=np.argmin(abs(list_values-value[0]))
+                if prel_selected[1+i,0]!=20:
+                    list_values.append(prel_selected[1+i,0])
+                #change 20 (closed) to 5+1/15 in value_list 
+                else:
+                    list_values.append(5+1/15)
+            #closed card selected         
+            if value==0:        
+                card_selected=np.argmin(np.abs(np.array(list_values)-(5+1/15)))
+            #maximum value selection     
+            else:  
+                card_selected=np.argmin(abs(list_values-(selected_value[5,0])))
+            if silent==False:
+                print(f"actual played card has index {card_selected} and value {np.round(list_values[card_selected],1)}")                              
+        if (level==20 or level==21 or level==22) and action_discard==True:    
+            #needs to return  closed card (index of player list)  
+            #new method likely not ideal 
+            list_values=[]
+            for i in range(12):
+                if prel_selected[1+i,0]!=20:
+                    list_values.append(prel_selected[1+i,0])
+                #change 20 (closed) to 5+1/15 in value_list 
+                else:
+                    list_values.append(5+1/15)
+            card_selected=np.argmin(np.abs(np.array(list_values)-(5+1/15)))               
         if silent==False:
             print(f"actual played card has index {card_selected} and value {np.round(list_values[card_selected],1)}")                
         return False, action_discard, card_selected
@@ -1151,6 +1341,7 @@ def vanish_check(player,silent=True):
 
 #parameters: current player, all players (only needed for numeric output collection and for choosing startegry in some levels, closed_pile, discarded_pile, 
 #Currently implemented mode with levels 0, -1, -2, -3
+
 def turn(player,players,pile,discarded,silent=True,output=False):
     #global in_play parameter to check whether the game is over for one player
     global in_play,step  #, player_2models, player_2columns for later   
@@ -1160,13 +1351,13 @@ def turn(player,players,pile,discarded,silent=True,output=False):
         #for 2 players
         player_2models={1:level1_2players_model,2:level1_2players_model,3:level3_2players_model,4:level3_2players_model,5:level5_2players_model,6:level5_2players_model,7:level7_2players_model,8:level7_2players_model,17:level17_2players_model,18:level17_2players_model}
         #other model strcture for 9 and 11, 13 15
-        player_2models_take={9:level9_2players_model_open,11:level11_2players_model_open,13:level13_2players_model_open,15:level15_2players_model_open,19:level19_2players_model_open}
-        player_2models_discard={9:level9_2players_model_discard,11:level11_2players_model_discard,13:level13_2players_model_discard,15:level15_2players_model_discard,19:level19_2players_model_discard}
-        player_2models_value={9:level9_2players_model_value,11:level11_2players_model_value,13:level13_2players_model_value,15:level15_2players_model_value,19:level19_2players_model_value}
-        player_2columns={1:level1_2players_columns,2:level1_2players_columns,3:level1_2players_columns,4:level1_2players_columns,5:level5_2players_columns,6:level5_2players_columns,7:level1_2players_columns,8:level1_2players_columns,9:level1_2players_columns,11:level1_2players_columns,13:level1_2players_columns,15:level1_2players_columns,17:level1_2players_columns,18:level1_2players_columns,19:level1_2players_columns}
-        player_2take_open={1:25,2:25,3:25,4:25,5:7,6:7,7:-25,8:-25,9:-25,11:-25,13:-25,15:-25,17:7,18:7,19:-25} #negativ means it is in prel_selected and gets rerranged before used in function
-        player_2discard={1:26,2:26,3:26,4:26,5:8,6:8,7:-26,8:-26,9:-26,11:-26,13:-26,15:-26,17:8,18:8,19:-26}
-        player_2index={1:28,2:28,3:28,4:28,5:-28,6:-28,7:-28,8:-28,9:-28,11:-28,13:-28,15:-28,17:-28,18:-28,19:-28}  
+        player_2models_take={9:level9_2players_model_open,11:level11_2players_model_open,13:level13_2players_model_open,15:level15_2players_model_open,19:level19_2players_model_open,20:level20_open_variable,21:level21_open_variable,22:level22_open_variable}
+        player_2models_discard={9:level9_2players_model_discard,11:level11_2players_model_discard,13:level13_2players_model_discard,15:level15_2players_model_discard,19:level19_2players_model_discard,20:level20_discard_variable,21:level21_discard_variable,22:level22_discard_variable}
+        player_2models_value={9:level9_2players_model_value,11:level11_2players_model_value,13:level13_2players_model_value,15:level15_2players_model_value,19:level19_2players_model_value,20:level20_value_variable,21:level21_value_variable,22:level22_value_variable}
+        player_2columns={1:level1_2players_columns,2:level1_2players_columns,3:level1_2players_columns,4:level1_2players_columns,5:level5_2players_columns,6:level5_2players_columns,7:level1_2players_columns,8:level1_2players_columns,9:level1_2players_columns,11:level1_2players_columns,13:level1_2players_columns,15:level1_2players_columns,17:level1_2players_columns,18:level1_2players_columns,19:level1_2players_columns,20:level1_2players_columns,21:level1_2players_columns,22:level1_2players_columns}
+        player_2take_open={1:25,2:25,3:25,4:25,5:7,6:7,7:-25,8:-25,9:-25,11:-25,13:-25,15:-25,17:7,18:7,19:-25,20:-25,21:-25,22:-25} #negativ means it is in prel_selected and gets rerranged before used in function
+        player_2discard={1:26,2:26,3:26,4:26,5:8,6:8,7:-26,8:-26,9:-26,11:-26,13:-26,15:-26,17:8,18:8,19:-26,20:-26,21:-26,22:-26}
+        player_2index={1:28,2:28,3:28,4:28,5:-28,6:-28,7:-28,8:-28,9:-28,11:-28,13:-28,15:-28,17:-28,18:-28,19:-28,20:-28,21:-28,22:-28}  
         #in level 0 random 50% choice of action
         if player.level==0:
             r_number1=random.random()
@@ -1223,6 +1414,16 @@ def turn(player,players,pile,discarded,silent=True,output=False):
                     num1=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=1)
                     #option 4 means closed card is used 
                     take_open,discard,selected_card=determine_best_option(player_2models_take[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],4,player.level,model_discard=player_2models_discard[player.level],model_value=player_2models_value[player.level],silent=silent)               
+            #in developement
+            elif player.level==20 or player.level==21 or player.level==22:  
+                #in principle only need num1 in the following, num2 is just ignored
+                num1,num2=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=0)    
+                take_open,discard,selected_card=determine_best_option(player_2models_take[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],3,player.level,model_discard=player_2models_discard[player.level],model_value=player_2models_value[player.level],silent=silent)
+                if take_open==-1:
+                    num1=actions(player,players,pile_closed,pile_open,True, False, silent=True,simulated=True,round_number=1)
+                    #option 4 means closed card is used 
+                    take_open,discard,selected_card=determine_best_option(player_2models_take[player.level],player_2columns[player.level],num1,player_2index[player.level],player_2take_open[player.level],player_2discard[player.level],4,player.level,model_discard=player_2models_discard[player.level],model_value=player_2models_value[player.level],silent=silent)               
+   
     #now action function
     if silent==False:
         print("player "+player.name+" turn")
@@ -1265,7 +1466,8 @@ def allowed_modes(names,nature,levels):
     nature_list = ['computer','human']    
     #list of allowed computer level for 2 players
     #less implemented for more players
-    comp_level_list2 = [19,18,17,15,13,11, 9, 8,7,6,5,4,3,2,1,0,-1,-2,-3]
+    #22, 21, 20 added 
+    comp_level_list2 = [22,21,20,19,18,17,15,13,11, 9, 8,7,6,5,4,3,2,1,0,-1,-2,-3]
     comp_level_list3 = [0,-1,-2,-3]
     comp_level_list4 = [0,-1,-2,-3]
     comp_level_list5 = [0,-1,-2,-3]
@@ -1559,7 +1761,24 @@ def skyjo_game(names,nature,levels,pause,silent=True,output=False):
             else:
                 #no numeric, output just winner
                 return winner
-            
+ 
+
+#single vector for parameters, first 'intercept'
+def logistic_function(coefs,data):
+    res=1/(1+np.exp(-coefs[0]-np.matmul(coefs[1:coefs.shape[0]],data)))
+    return res
+
+#level 20 to 22 models, which currently all variable and need to defined here 
+level20_open_variable=np.zeros((6))
+level20_discard_variable=np.zeros((6))
+level20_value_variable=np.zeros((7))
+level21_open_variable=np.zeros((6))
+level21_discard_variable=np.zeros((6))
+level21_value_variable=np.zeros((7))
+level22_open_variable=np.zeros((6))
+level22_discard_variable=np.zeros((6))
+level22_value_variable=np.zeros((7))
+
 # draw function
 def draw(canvas):
     global pile_open,pile_closed, players,card_b, card_a, step, discard, take_open, player, end_score, player, tot_score, start_screen
@@ -1892,7 +2111,7 @@ global mousepos,player, canvas, card_c, step, in_play, counter, endcounter, end_
 names=('Human','Computer')
 mode=('human','computer')
 #second level choose chooses computer level 
-level=(1,19)
+level=(1,5)
 #create pile and players
 pile_closed=Pile('create_closed',False)
 pile_open=Pile('create_open',pile_closed)
