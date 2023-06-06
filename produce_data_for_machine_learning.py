@@ -18,6 +18,13 @@ from ml_functions2 import *
 #for machine learning
 from xgboost import XGBRegressor
 
+#to supress sklearn warning that the columns have no names
+def warn(*args, **kwargs):
+    pass
+import warnings
+warnings.warn = warn
+
+#needed to produce outut 
 columns=['open_pile_card']
 for i in range(12):
     columns.append('own_cards_'+str(i))
@@ -39,22 +46,24 @@ sel1=np.copy(sel2)
 sel1[49:51]=1
 
 
-#file needed to run
-#models
-level1_2players_columns=np.loadtxt("xgb_model1_column2.txt")
-level1_2players_model = XGBRegressor()
-level1_2players_model.load_model("xgb_model2.json")
 
-
+#nature of players 
 names=('alpha','beta')
 nature=('computer','computer')
-levels=(2,2)
+levels=(20,0)
+#13 15 getn more into infinte loops
 
-scores,turns,last_player,output=skyjo_round(names,nature,levels,0,True,True,True)
+
+
+#test round non silent 
+
+scores,turns,last_player,output=skyjo_round(names,nature,levels,0,True,False,True)
+#main run
+n_it=10
 start_time=time.time()
-df=round_for_ml(names,nature,levels,sel1,1000,columns)
+df=round_for_ml(names,nature,levels,sel1,n_it,columns)
 stop_time=time.time()
 print(f"running time was {round(stop_time-start_time,4)} seconds")
 print(df.head())
 print(df.tail())
-df.to_pickle('level_rand_levels2_1000_0.pkl')
+df.to_pickle('level_rand_levels20_0_'+str(n_it)+'.pkl')
