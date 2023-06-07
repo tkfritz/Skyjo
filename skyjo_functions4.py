@@ -2090,13 +2090,7 @@ def logistic_function(coefs,data):
     res=1/(1+np.exp(-coefs[0]-np.matmul(coefs[1:coefs.shape[0]],data)))
     return res
 
-#level 20 to 22 models, which currently all variable and need to defined here 
-level20_open_variable=np.zeros((6))
-level20_discard_variable=np.zeros((6))
-level20_value_variable=np.zeros((7))
-level21_open_variable=np.zeros((6))
-level21_discard_variable=np.zeros((6))
-level21_value_variable=np.zeros((7))
+#This level to be used for fit results need to defined
 level22_open_variable=np.zeros((6))
 level22_discard_variable=np.zeros((6))
 level22_value_variable=np.zeros((7))
