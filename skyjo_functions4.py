@@ -1336,11 +1336,9 @@ def vanish_check(player,silent=True):
         if silent==False:        
             print("3 "+str(card1.number)+" vanish from Player")
     return card_needs_to_vanish        
-
-#parameters: current player, all players (only needed for numeric output collection and for choosing startegry in some levels, closed_pile, discarded_pile, 
-#Currently implemented mode with levels 0, -1, -2, -3
-
-def turn(player,players,pile,discarded,silent=True,output=False):
+ 
+#parameters: current player, all players (only needed for numeric output collection and for choosing startegry in some levels, closed_pile, discarded_pile, optional parameters for level20 and 21, needed to run those flexible in fits  
+def turn(player,players,pile,discarded,silent=True,output=False,level20_open_variable=np.zeros((6)),level21_open_variable=np.zeros((6)),level20_discard_variable=np.zeros((6)),level21_discard_variable=np.zeros((6)),level20_value_variable=np.zeros((7)),level21_value_variable=np.zeros((7))):
     #global in_play parameter to check whether the game is over for one player
     global in_play,step  #, player_2models, player_2columns for later   
     #set take_open and discard
@@ -1521,8 +1519,8 @@ def allowed_modes(names,nature,levels):
 #parameters: player names, modes, level (all list of same length), pause per turn (seconds can be zero), 
 #whether it is first round either True, or player which starts 
 #silent printing optional 
-#output collection optional , vanish card count is now part of numeric output
-def skyjo_round(names,nature,levels,pause,first_round,silent=True,output=False):
+#output collection optional , vanish card count is now part of numeric output, optional model paramters for level 20 and 21 needed for use in fits 
+def skyjo_round(names,nature,levels,pause,first_round,silent=True,output=False,level20_open_variable=np.zeros((6)),level21_open_variable=np.zeros((6)),level20_discard_variable=np.zeros((6)),level21_discard_variable=np.zeros((6)),level20_value_variable=np.zeros((7)),level21_value_variable=np.zeros((7))):
     #check whether input is allowed and defined
     allowed=allowed_modes(names,nature,levels)
     #report and abort when not defined            
@@ -1572,9 +1570,9 @@ def skyjo_round(names,nature,levels,pause,first_round,silent=True,output=False):
             time.sleep(pause)
         #first turn
         if output==False:
-            turn(starter,players,pile_closed,pile_open,silent,False)
+            turn(starter,players,pile_closed,pile_open,silent,False,level20_open_variable=level20_open_variable,level21_open_variable=level21_open_variable,level20_discard_variable=level20_discard_variable,level21_discard_variable=level21_discard_variable,level20_value_variable=level20_value_variable,level21_value_variable=level21_value_variable)
         else:
-            starter,players,pile,discarded,num=turn(starter,players,pile_closed,pile_open,silent,True)
+            starter,players,pile,discarded,num=turn(starter,players,pile_closed,pile_open,silent,True,level20_open_variable=level20_open_variable,level21_open_variable=level21_open_variable,level20_discard_variable=level20_discard_variable,level21_discard_variable=level21_discard_variable,level20_value_variable=level20_value_variable,level21_value_variable=level21_value_variable)
             outputs.append(num)
         if silent==False:
             print("closed pile has "+str(len(pile_closed.list_cards))+" cards")     
@@ -1596,9 +1594,9 @@ def skyjo_round(names,nature,levels,pause,first_round,silent=True,output=False):
                 print("next turn is of "+player.name)            
             if output==False:
                 #turn with and without output collectiob
-                turn(player,players,pile_closed,pile_open,silent,False)
+                turn(player,players,pile_closed,pile_open,silent,False,level20_open_variable=level20_open_variable,level21_open_variable=level21_open_variable,level20_discard_variable=level20_discard_variable,level21_discard_variable=level21_discard_variable,level20_value_variable=level20_value_variable,level21_value_variable=level21_value_variable)
             else:
-                player,players, pile,discarded,num=turn(player,players,pile_closed,pile_open,silent,True)   
+                player,players, pile,discarded,num=turn(player,players,pile_closed,pile_open,silent,True,level20_open_variable=level20_open_variable,level21_open_variable=level21_open_variable,level20_discard_variable=level20_discard_variable,level21_discard_variable=level21_discard_variable,level20_value_variable=level20_value_variable,level21_value_variable=level21_value_variable)   
                 outputs.append(num)
             if silent==False:
                 print(player.name)
@@ -1621,9 +1619,9 @@ def skyjo_round(names,nature,levels,pause,first_round,silent=True,output=False):
                 if silent==False:
                     print("next turn is of "+player.name)
                 if output==False:
-                    player,players,pile_closed,pile_open=turn(player,players,pile_closed,pile_open,silent,False)
+                    player,players,pile_closed,pile_open=turn(player,players,pile_closed,pile_open,silent,False,level20_open_variable=level20_open_variable,level21_open_variable=level21_open_variable,level20_discard_variable=level20_discard_variable,level21_discard_variable=level21_discard_variable,level20_value_variable=level20_value_variable,level21_value_variable=level21_value_variable)
                 else:
-                    player,players, pile,discarded,num=turn(player,players,pile_closed,pile_open,silent,True)    
+                    player,players, pile,discarded,num=turn(player,players,pile_closed,pile_open,silent,True,level20_open_variable=level20_open_variable,level21_open_variable=level21_open_variable,level20_discard_variable=level20_discard_variable,level21_discard_variable=level21_discard_variable,level20_value_variable=level20_value_variable,level21_value_variable=level21_value_variable)    
                     outputs.append(num)
                 if silent==False:
                     print("closed pile has "+str(len(pile_closed.list_cards))+" cards")
@@ -1666,12 +1664,14 @@ def skyjo_round(names,nature,levels,pause,first_round,silent=True,output=False):
             return scores, counter-idx+1, last_player
         else:    
             return scores, counter-idx+1, last_player, num2        
+
        
 #parameters: player names, modes, level (all list of same length),
 #pause length (can be zero) 
 #printing optional 
 #output collection optional 
-def skyjo_game(names,nature,levels,pause,silent=True,output=False):
+#optinal model paramters for level 20 and 21, needed for use in fits 
+def skyjo_game(names,nature,levels,pause,silent=True,output=False,level20_open_variable=np.zeros((6)),level21_open_variable=np.zeros((6)),level20_discard_variable=np.zeros((6)),level21_discard_variable=np.zeros((6)),level20_value_variable=np.zeros((7)),level21_value_variable=np.zeros((7))):
     #check whether parameters are allowed and defined)
     allowed=allowed_modes(names,nature,levels)
     #report and abort when not defined            
@@ -1695,11 +1695,11 @@ def skyjo_game(names,nature,levels,pause,silent=True,output=False):
             #player nature creation
             players.append(Player(names[i],nature[i],levels[i]))
         if output==False:
-            score,turns,last_player=skyjo_round(names,nature,levels,pause,True,True,output) 
+            score,turns,last_player=skyjo_round(names,nature,levels,pause,True,True,output,level20_open_variable=level20_open_variable,level21_open_variable=level21_open_variable,level20_discard_variable=level20_discard_variable,level21_discard_variable=level21_discard_variable,level20_value_variable=level20_value_variable,level21_value_variable=level21_value_variable) 
         else:
             #for output collection first a list which is at the end converted to array
             outputs=[]
-            score,turns,last_player,num=skyjo_round(names,nature,levels,pause,True,True,output)   
+            score,turns,last_player,num=skyjo_round(names,nature,levels,pause,True,True,output,level20_open_variable=level20_open_variable,level21_open_variable=level21_open_variable,level20_discard_variable=level20_discard_variable,level21_discard_variable=level21_discard_variable,level20_value_variable=level20_value_variable,level21_value_variable=level21_value_variable)   
             outputs.append(num)
         if silent==False:
             print("New Skyjo game")
@@ -1717,9 +1717,9 @@ def skyjo_game(names,nature,levels,pause,silent=True,output=False):
                 if silent==False:
                     print("playing round "+str(round_counter+1))
                 if output==False:
-                    score,turns,last_player=skyjo_round(names,nature,levels,pause,last_player,True,output)
+                    score,turns,last_player=skyjo_round(names,nature,levels,pause,last_player,True,output,level20_open_variable=level20_open_variable,level21_open_variable=level21_open_variable,level20_discard_variable=level20_discard_variable,level21_discard_variable=level21_discard_variable,level20_value_variable=level20_value_variable,level21_value_variable=level21_value_variable)
                 else: 
-                    score,turns,last_player,num=skyjo_round(names,nature,levels,pause,last_player,True,output)
+                    score,turns,last_player,num=skyjo_round(names,nature,levels,pause,last_player,True,output,level20_open_variable=level20_open_variable,level21_open_variable=level21_open_variable,level20_discard_variable=level20_discard_variable,level21_discard_variable=level21_discard_variable,level20_value_variable=level20_value_variable,level21_value_variable=level21_value_variable)
                     outputs.append(num)
                 for i in range(len(tot_score)):
                     tot_score[i]+=score[i] 
@@ -1758,8 +1758,8 @@ def skyjo_game(names,nature,levels,pause,silent=True,output=False):
                 return final, winner
             else:
                 #no numeric, output just winner
-                return winner
-            
+                return winner   
+   
 # draw function
 def draw(canvas):
     global pile_open,pile_closed, players,card_b, card_a, step, discard, take_open, player, end_score, player, tot_score, start_screen
