@@ -177,6 +177,29 @@ def loop_reg(feature_train, target_train, feature_test, target_test,max_depth,re
         #saved at each step because it sometimes crashes 
         np.savetxt(file_name, resb) 
 
+#2 grid in l2regularziation and max depth
+#parameters: feature of train, target of train, feature of test, target of test,
+#minimum max deoth, maximum max depth, minimum l2 regularization,
+#factor of increase, number of steps, output file name regression=True default
+def loop_reg2(feature_train, target_train, feature_test, target_test,max_depth_start,max_depth_stop,reg_start,reg_increase,reg_steps,file_name,regression=True):
+    #that takes now some time
+    resb=np.zeros((4,reg_steps,int(max_depth_stop-max_depth_start+1)))
+    #regularization grid
+    for i in range(reg_steps):
+        print(f"regularization doing case {i}")
+        #max depth grid 
+        for j in range(resb.shape[2]):
+            regularization=reg_start*reg_increase**i
+            max_depth=j+max_depth_start
+            #regression
+            if regression==True:
+                ar=do_xgb(feature_train, target_train, feature_test, target_test,max_depth,reg=regularization)
+            #classification
+            else:
+                ar=do_xgb_class(feature_train, target_train, feature_test, target_test,max_depth,reg=regularization)
+            resb[:,i,j]=ar
+    np.save(file_name, resb)
+    
 #f1 measure row x 
 def fmeas(conf_matrix,x):
     prec=conf_matrix[x,x]/np.sum(conf_matrix[:,x])
