@@ -951,6 +951,7 @@ def gradient_fit3(open_vars,discard_vars,value_vars,base_open,base_discard,base_
         #time to use as delyta time in check 
         if i>0:
             hours=(time.time()-start_time)/3600.
+            print(f"ran for {np.round(hours,3)} hours")
             win_percentage=np.mean(base_res[40,:])
             if hours>max_time or win_percentage<=min_win:
                 if hours>max_time:
