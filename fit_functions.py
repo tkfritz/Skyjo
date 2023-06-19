@@ -813,7 +813,7 @@ def gradient_step2(open_vars,discard_vars,value_vars,open_avg,discard_avg,value_
 #min_win  win in pecentage when it go below then it is aborted early 
 def gradient_fit3(open_vars,discard_vars,value_vars,base_open,base_discard,base_value,open_step,discard_step,value_step,n_games=100,max_iter=10,output_name="gradient2_fit1_it",fact_new_par2=1.5,fact_new_step_no2=2.5,fact_new_step_sig2=2.0,tolerance=1.5,max_base_iter=10,max_time=100,min_win=0.):
     #start_time for stopping running when too long
-    start_time=time.time()
+    full_start_time=time.time()
     #to save parameters and steps 
     results=np.zeros((19,max_iter,2))
     #to save base steps also not used onces, is large created plan is not to use all 3 more to insert different counters
@@ -824,7 +824,7 @@ def gradient_fit3(open_vars,discard_vars,value_vars,base_open,base_discard,base_
     for i in range(max_iter):
         #time to use as delyta time in check 
         if i>0:
-            hours=(time.time()-start_time)/3600.
+            hours=(time.time()-full_start_time)/3600.
             win_percentage=np.mean(base_res[40,:])
             if hours>max_time or win_percentage<=min_win:
                 if hours>max_time:
