@@ -148,17 +148,20 @@ start_time=time.time()
 #seeting up the fit 
 n_games=100
 max_iter=20
-output_name="gradient3_fit3_it"
-#was 2.5 for 3_2
-tolerance=2.0
-#still does not take time right
-max_time=9.
+output_name="gradient4_fit1_it"
+#for starting is
+tolerance_one=2.0
+#for stopping is
+tolerance_later=0.5
+max_time=14
 min_win=20
+#reduces step for steps which lead to negative win change 
+power_incr=1.5
 #using first of the good models 
-gradient_res,gradient_allres=gradient_fit3(list_open8,list_discard8,list_value8,good_models[0:6,0],good_models[6:12,0],good_models[12:19,0],open_steps2,discard_steps2,value_steps2,n_games=n_games,max_iter=max_iter,output_name=output_name,tolerance=tolerance,max_time=max_time,min_win=min_win)
+gradient_res,gradient_allres=gradient_fit4(list_open8,list_discard8,list_value8,good_models[0:6,0],good_models[6:12,0],good_models[12:19,0],open_steps2,discard_steps2,value_steps2,n_games=n_games,max_iter=max_iter,output_name=output_name,tolerance_one=tolerance_one,tolerance_later=tolerance_later,max_time=max_time,min_win=min_win,power_incr=power_incr)
 #saving output 
-np.save('gradient3_fit3.npy',gradient_res)
-np.save('gradient3_fit3_all.npy',gradient_allres)
+np.save('gradient4_fit1.npy',gradient_res)
+np.save('gradient4_fit1_all.npy',gradient_allres)
 stop_time=time.time()
 print(f"Needed {np.round(stop_time-start_time,3)} seconds") 
 #not sure whether working could require harder condition for non initial test since then it is not chance
