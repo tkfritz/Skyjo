@@ -134,22 +134,29 @@ discard_steps2=logpar[3,6:12]
 print(discard_steps2)
 value_steps2=logpar[3,12:19]
 print(value_steps2)
-#start model parameters
+#load models properties best for monte carlo
 selected_models=np.load("testbest36_v1.npy")
+#select parameters
 good_models=selected_models[19:38,0,:]
 print(good_models.shape)
+#best of gradient 1 
+selected_models=np.load("gradient3_fit2_it07.npy")
+print(selected_models.shape)
+good_models=selected_models[19:38,0,:]
 
 start_time=time.time()
 #seeting up the fit 
-n_games=4
-max_iter=10
+n_games=100
+max_iter=20
 output_name="gradient3_fit3_it"
-#tolerance increase to avoid that chance effect starts that lopp *and decreasing factor creates problem
+#was 2.5 for 3_2
 tolerance=2.0
-max_time=0.4
+#still does not take time right
+max_time=9.
 min_win=20
-#using first of above
+#using first of the good models 
 gradient_res,gradient_allres=gradient_fit3(list_open8,list_discard8,list_value8,good_models[0:6,0],good_models[6:12,0],good_models[12:19,0],open_steps2,discard_steps2,value_steps2,n_games=n_games,max_iter=max_iter,output_name=output_name,tolerance=tolerance,max_time=max_time,min_win=min_win)
+#saving output 
 np.save('gradient3_fit3.npy',gradient_res)
 np.save('gradient3_fit3_all.npy',gradient_allres)
 stop_time=time.time()
