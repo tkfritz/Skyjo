@@ -812,7 +812,7 @@ def gradient_step2(open_vars,discard_vars,value_vars,open_avg,discard_avg,value_
 #max_time the maximum time in hours allowed
 #min_win  win in pecentage when it go below then it is aborted early 
 def gradient_fit3(open_vars,discard_vars,value_vars,base_open,base_discard,base_value,open_step,discard_step,value_step,n_games=100,max_iter=10,output_name="gradient2_fit1_it",fact_new_par2=1.5,fact_new_step_no2=2.5,fact_new_step_sig2=2.0,tolerance=1.5,max_base_iter=10,max_time=100,min_win=0.):
-    #start_time for stopping running when too long
+    #start_time for stopping running when too long, still not working seem to be recreated too often
     full_start_time=time.time()
     #to save parameters and steps 
     results=np.zeros((19,max_iter,2))
@@ -832,134 +832,7 @@ def gradient_fit3(open_vars,discard_vars,value_vars,base_open,base_discard,base_
                 if win_percentage<=min_win:    
                     print(f"fit ends early because win limit of {min_win} reached")
                     #ending with early return 
-                return results[:,0:,i,:], all_base_results[:,0:all_base,:]   
-        #add some end conditions time and already good enough fit 
-        print(f"doing iteration {i}")
-        print("doing base step")
-        #4 times as often to reduce error in this step 
-        #counter within model 
-        base_it=0
-        base_res=run_level21(open_vars,discard_vars,value_vars,base_open,base_discard,base_value,n_games*4)
-        all_base_results[0:41,all_base,:]=base_res
-        #+1 that unfilled is not relevant number
-        all_base_results[41,all_base,:]=i+1
-        all_base_results[42,all_base,:]=base_it+1
-        all_base_results[43,all_base,:]=all_base+1   
-        base_it+=1
-        all_base+=1
-        #if not first iteration compare with previous iteration
-        if i>0:
-            #find previous to compare mean one iteration les and maximal base_it
-            maxv=0
-            index_max=0
-            for j in range(all_base+1):
-                if all_base_results[41,j,0]==i and all_base_results[42,j,0]>maxv:
-                    maxv=all_base_results[42,j,0]
-                    index_max=j
-            err=100*np.sqrt(np.sum(base_res[38,:])/np.sum(base_res[38,:])**2+np.sum(all_base_results[38,index_max,:])/np.sum(all_base_results[38,index_max,:])**2)
-            diff=np.mean(base_res[40,:])-np.mean(all_base_results[40,index_max,:])
-            if diff/err>tolerance:
-                print(f"win fraction decreased by {diff/err} sigma optimize")
-                #at most 10 setsp just for avoiding always running
-                while diff/err>tolerance and base_it<max_base_iter:
-                    print(f"doing iteration {base_it} for improving base value")
-                    #decrease base step size each time by sqrt(2), gradient step size also by the same 
-                    new_par1,new_step1=get_new_parameters3(resgrad2,fact_new_par=fact_new_par2/np.sqrt(2)**base_it,fact_new_step_no=fact_new_step_no2/np.sqrt(2)**base_it,fact_new_step_sig=fact_new_step_sig2/np.sqrt(2)**base_it)
-                    results[:,i-1,0]=new_par1
-                    results[:,i-1,1]=new_step1  
-                    #pass to used variables
-                    base_open=new_par1[0:6]
-                    base_discard=new_par1[6:12]
-                    base_value=new_par1[12:19]        
-                    #passing as new steps
-                    open_step=new_step1[0:6]
-                    discard_step=new_step1[6:12]
-                    value_step=new_step1[12:19]                    
-                    #next base trial
-                    base_res=run_level21(open_vars,discard_vars,value_vars,base_open,base_discard,base_value,n_games*4)
-                    all_base_results[0:41,all_base,:]=base_res
-                    #+1 that unfilled is not relevant number
-                    all_base_results[41,all_base,:]=i+1
-                    all_base_results[42,all_base,:]=base_it+1
-                    all_base_results[43,all_base,:]=all_base+1   
-                    base_it+=1
-                    all_base+=1
-                    maxv=0
-                    index_max=0
-                    for j in range(all_base+1):
-                        if all_base_results[41,j,0]==i and all_base_results[42,j,0]>maxv:
-                            maxv=all_base_results[42,j,0]
-                            index_max=j
-                    err=100*np.sqrt(np.sum(base_res[38,:])/np.sum(base_res[38,:])**2+np.sum(all_base_results[38,index_max,:])/np.sum(all_base_results[38,index_max,:])**2)
-                    diff=np.mean(base_res[40,:])-np.mean(all_base_results[40,index_max,:])   
-                    if base_it==max_base_iter: 
-                        print("maximum base iteration reached")
-                        print(f"win fraction decreased by {diff/err}")
-                    if diff/err>tolerance:
-                        print(f"win fraction decreased by {diff/err} sigma optimize")  
-                    else: 
-                        print(f"win fraction decreased by {diff/err} sigma acceptable")    
-            else: 
-                print(f"win fraction decreased by {diff/err} sigma acceptable")
-        else:
-            print("no comparison done with previous iteration in iteration 0")
-        start_time=time.time()
-        resgrad1=gradient_step2(open_vars,discard_vars,value_vars,base_open,base_discard,base_value,open_step,discard_step,value_step,n_games=n_games)
-        #combine base and steps
-        resgrad2=np.zeros((41,20,len(open_vars)))
-        resgrad2[:,0,:]=base_res
-        resgrad2[:,1:20,:]=resgrad1
-        np.save(output_name+str(i)+".npy",resgrad2)
-        stop_time=time.time()
-        print(f"{n_games} games need {np.round(stop_time-start_time,3)} seconds")
-        #getting new steps and parameters
-        new_par1,new_step1=get_new_parameters3(resgrad2,fact_new_par=fact_new_par2,fact_new_step_no=fact_new_step_no2,fact_new_step_sig=fact_new_step_sig2)
-        results[:,i,0]=new_par1
-        results[:,i,1]=new_step1        
-        #passing as new base
-        base_open=new_par1[0:6]
-        base_discard=new_par1[6:12]
-        base_value=new_par1[12:19]        
-        #passing as new steps
-        open_step=new_step1[0:6]
-        discard_step=new_step1[6:12]
-        value_step=new_step1[12:19]
-    return results, all_base_results[:,0:all_base,:]    
-
-#parameters,list of open paremeters, discard parameters, value parameters for level 20
-# open base, discard base, value base parameters for level 21
-# open steps, discard steps, value steps parameters for level 21
-#then optional the parameter to adjust step size of get_new_parameters3
-# factor for next base is divided by signifciance
-#factor on step when not significant
-#factor on step when signifciance divide by signifant
-#tolerance of how many sigma the main fit can get larger to be acceptable 
-#maximum number of steps to improve base
-#max_time the maximum time in hours allowed
-#min_win  win in pecentage when it go below then it is aborted early 
-def gradient_fit3(open_vars,discard_vars,value_vars,base_open,base_discard,base_value,open_step,discard_step,value_step,n_games=100,max_iter=10,output_name="gradient2_fit1_it",fact_new_par2=1.5,fact_new_step_no2=2.5,fact_new_step_sig2=2.0,tolerance=1.5,max_base_iter=10,max_time=100,min_win=0.):
-    #start_time for stopping running when too long
-    start_time=time.time()
-    #to save parameters and steps 
-    results=np.zeros((19,max_iter,2))
-    #to save base steps also not used onces, is large created plan is not to use all 3 more to insert different counters
-    all_base_results=np.zeros((44,max_iter*100,len(open_vars)))
-    #counter of all base models 
-    all_base=0
-    #first setp does for sure 
-    for i in range(max_iter):
-        #time to use as delyta time in check 
-        if i>0:
-            hours=(time.time()-start_time)/3600.
-            print(f"ran for {np.round(hours,3)} hours")
-            win_percentage=np.mean(base_res[40,:])
-            if hours>max_time or win_percentage<=min_win:
-                if hours>max_time:
-                    print(f"fit ends early because of time limit of {max_time} reached")
-                if win_percentage<=min_win:    
-                    print(f"fit ends early because win limit of {min_win} reached")
-                    #ending with early return 
-                return results[:,0:,i,:], all_base_results[:,0:all_base,:]   
+                return results[:,0:i,:], all_base_results[:,0:all_base,:]   
         #add some end conditions time and already good enough fit 
         print(f"doing iteration {i}")
         print("doing base step")
