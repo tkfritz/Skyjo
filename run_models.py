@@ -95,6 +95,46 @@ for i in range(41):
         c2+=1
 print(c2)    
 
+#now better then 32 fits 
+list_grad6=[f for f in os.listdir(myPath) 
+    if (f.startswith('gradient4_fit1_it') )]
+list_grad6.sort()
+range2=len(list_grad6)
+
+allgrad6=np.zeros((gradfit15.shape[0],gradfit15.shape[1],gradfit15.shape[2],range2))
+
+for i in range(range2):
+    allgrad6[:,:,:,i]=np.load(list_grad6[i])
+good_models2b=np.zeros((19,11))
+c=0
+for i in range(1,allgrad6.shape[3]):
+    for j in range(allgrad6.shape[1]):
+        #excluding first model which same as before
+        if np.mean(allgrad6[40,j,:,i])<32.0 and j==0 and i!=0 and np.mean(allgrad6[19:38,j,0,i])!=np.mean(allgrad6[19:38,0,0,0]):
+            print(c)
+            print(f"case {i} {j} losses to {np.mean(allgrad6[40,j,:,i])}")
+            good_models2b[:,c]=allgrad6[19:38,j,0,i]
+            c+=1
+        if np.mean(allgrad6[40,j,:,i])<30.0 and j!=0:
+            print(c)
+            print(f"case {i} {j} losses to {np.mean(allgrad6[40,j,:,i])}")  
+            good_models2b[:,c]=allgrad6[19:38,j,0,i]
+            c+=1
+print(f"{c} selected") 
+good_model3b=np.zeros((19,11))
+c2=0
+for i in range(11):
+    good=True
+    for j in range(11):
+        if i>j:
+            if np.mean(good_models2b[:,i])==np.mean(good_models2b[:,j]):
+                print(i,j)
+                good=False
+    if good==True:
+        good_model3b[:,c2]=good_models2b[:,i]
+        c2+=1
+print(c2)  
+
 allres2=np.load("mc_v9_all.npy")
 c=0
 list_open7=[]
@@ -106,14 +146,24 @@ for i in range(850):
         list_discard7.append(allres2[25:31,i,0])        
         list_value7.append(allres2[31:38,i,0]) 
         c+=1
-allres8=np.zeros((41,6,40))
+allres8=np.zeros((41,6,11))
 start_time=time.time()
 n_games=400
-#doing in pieces now first 10 
-for i in range(10):
+#for 34 use good_model3
+#doing in pieces first 10 is testbest34a_v2.npy
+#10 to 20 is testbest34b_v2.npy
+#20 to 25 is testbest34d_v2.npy
+#25 to 30 is testbest34c_v2.npy
+#30 to 35 is testbest34e_v2.npy
+#35 to 40 is testbest34f_v2.npy
+#now using good_model3b
+#0 to 5 testbest32a_v2.npy
+# 5 to 11 testbest32b_v2.npy
+
+for i in range(5,11):
     print(f"doing level 21 case {i}")
-    allres8[:,:,i]=run_level21(list_open7,list_discard7,list_value7,good_model3[0:6,i],good_model3[6:12,i],good_model3[12:19,i],n_games)
-np.save("testbest34a_v2.npy",allres8)
+    allres8[:,:,i]=run_level21(list_open7,list_discard7,list_value7,good_model3b[0:6,i],good_model3b[6:12,i],good_model3b[12:19,i],n_games)
+np.save("testbest32b_v2.npy",allres8)
 stop_time=time.time()
 print(f"{n_games} ran for {np.round(stop_time-start_time,2)} seconds") 
 #10ieteration for all  need 563 seconds
