@@ -134,6 +134,26 @@ for i in range(11):
         good_model3b[:,c2]=good_models2b[:,i]
         c2+=1
 print(c2)  
+#now better than 28 from mc gaussian 
+mcg1=np.load("mcg_v1_all.npy")
+#first than 28.0
+sel_modelg=np.zeros((19,23))
+csel=0
+for i in range(mcg1.shape[1]):
+    if np.mean(mcg1[40,i,:])<28.0:
+        print(np.mean(mcg1[40,i,:]))
+        sel_modelg[:,csel]=mcg1[19:38,i,0]
+        csel+=1
+print(f"{csel} are selected")    
+#now between 28 and 29.5
+sel_modelg=np.zeros((19,34))
+csel=0
+for i in range(mcg1.shape[1]):
+    if np.mean(mcg1[40,i,:])>=28.0 and  np.mean(mcg1[40,i,:])<29.5:
+        print(np.mean(mcg1[40,i,:]))
+        sel_modelg[:,csel]=mcg1[19:38,i,0]
+        csel+=1
+print(f"{csel} are selected")    
 
 allres2=np.load("mc_v9_all.npy")
 c=0
@@ -146,9 +166,10 @@ for i in range(850):
         list_discard7.append(allres2[25:31,i,0])        
         list_value7.append(allres2[31:38,i,0]) 
         c+=1
-allres8=np.zeros((41,6,11))
+allres8=np.zeros((41,6,23))
 start_time=time.time()
 n_games=400
+#all them with 400
 #for 34 use good_model3
 #doing in pieces first 10 is testbest34a_v2.npy
 #10 to 20 is testbest34b_v2.npy
@@ -159,11 +180,16 @@ n_games=400
 #now using good_model3b
 #0 to 5 testbest32a_v2.npy
 # 5 to 11 testbest32b_v2.npy
+#now 200 
+# 0 11 is testbest29a_v2.npy aa another rerun 
+# 11 23 is testbest29b_v2.npy  bb anotyher random rerun
+#now 400 again now of same 28 to 29.5 models 
+#0 10 is a
 
-for i in range(5,11):
+for i in range(0,10):
     print(f"doing level 21 case {i}")
-    allres8[:,:,i]=run_level21(list_open7,list_discard7,list_value7,good_model3b[0:6,i],good_model3b[6:12,i],good_model3b[12:19,i],n_games)
-np.save("testbest32b_v2.npy",allres8)
+    allres8[:,:,i]=run_level21(list_open7,list_discard7,list_value7,sel_modelg[0:6,i],sel_modelg[6:12,i],sel_modelg[12:19,i],n_games)
+np.save("testbest30a_v2.npy",allres8)
 stop_time=time.time()
 print(f"{n_games} ran for {np.round(stop_time-start_time,2)} seconds") 
-#10ieteration for all  need 563 seconds
+
