@@ -1107,3 +1107,80 @@ def gradient_fit4(open_vars,discard_vars,value_vars,base_open,base_discard,base_
         discard_step=new_step1[6:12]
         value_step=new_step1[12:19]
     return results, all_base_results[:,0:all_base,:]    
+
+
+
+#does Monte carlo against a number of cases
+#open_vars and co and and are lists of the variables to be used 
+#open_ranges and discard_ranges are 2,6 np arrays, value_ranges is 2,7 np array, 
+#reliazations are number of models tried in one, trials are number of MC models for level 21
+#wfrac when it aborts early
+#wfrac2 performance of worst case .
+#here mean and gauusian error araound it
+def montecarlo_trials3(open_vars,discard_vars,value_vars,open_mean,discard_mean,value_mean,open_std,discard_std,value_std,realizations,trials,wfrac=0.10,wfrac2=0.551):
+    n_it=realizations
+    results=np.zeros((41,trials,len(open_vars)))
+    for j in range(trials):
+        print(f"doing Monte Carlo {j} for level 21")
+        #create random values for level 21 within the ranges, save are used for all level 20 models
+        level21_open_variable=np.zeros((6))
+        level21_discard_variable=np.zeros((6))
+        level21_value_variable=np.zeros((7))
+        for k in range(7):
+            level21_value_variable[k]=random.gauss(value_mean[k],value_std[k])
+            if k<6:
+                level21_open_variable[k]=random.gauss(open_mean[k],open_std[k]) 
+                level21_discard_variable[k]=random.gauss(discard_mean[k],discard_std[k]) 
+        for k in range(len(open_vars)):
+            print(f"trying case {k} for level 20")
+            level20_open_variable=np.array(open_vars[k])
+            level20_discard_variable=np.array(discard_vars[k])
+            level20_value_variable=np.array(value_vars[k])             
+            results[0:6,j,k]=level20_open_variable
+            results[6:12,j,k]=level20_discard_variable
+            results[12:19,j,k]=level20_value_variable    
+            results[19:25,j,k]=level21_open_variable
+            results[25:31,j,k]=level21_discard_variable
+            results[31:38,j,k]=level21_value_variable         
+            win20=0
+            it_counter=0
+            start_time=time.time()
+            n_it1=n_it
+            if n_it1>22:
+                n_it1=22
+            #22 always     
+            for i in range(n_it1):
+                names=['alpha','beta']
+                nature=['computer','computer']
+                levels=[20,21]
+                it_counter+=1
+                winner=skyjo_game(names,nature,levels,0,True,False,level20_open_variable=level20_open_variable,level21_open_variable=level21_open_variable,level20_discard_variable=level20_discard_variable,level21_discard_variable=level21_discard_variable,level20_value_variable=level20_value_variable,level21_value_variable=level21_value_variable)
+                if winner[0]==1:
+                    win20+=1
+            #98% ownside win conditions tested here   2.33 sigma   stops early when new model clearly bad or good 
+            while it_counter<n_it and abs((win20-it_counter/2)/np.sqrt(it_counter))<2.33:  
+                names=['alpha','beta']
+                nature=['computer','computer']
+                levels=[20,21]
+                it_counter+=1
+                winner=skyjo_game(names,nature,levels,0,True,False,level20_open_variable=level20_open_variable,level21_open_variable=level21_open_variable,level20_discard_variable=level20_discard_variable,level21_discard_variable=level21_discard_variable,level20_value_variable=level20_value_variable,level21_value_variable=level21_value_variable)
+                if winner[0]==1:
+                    win20+=1                
+            #now checking whether 98% sigficant on bad performance        
+            results[38,j,k]=it_counter
+            results[39,j,k]=win20
+            results[40,j,k]=100*win20/it_counter         
+            stop_time=time.time()
+            print(f"{it_counter} games need {np.round(stop_time-start_time,3)} seconds")
+            print(f"level 20 won to {np.round(results[40,j,k],1)} %")
+        print(f"level 20 won in average to {np.round(np.mean(results[40,j,:]),1)} %") 
+        if np.mean(results[40,j,:]/100)<wfrac and np.max(results[40,j,:]/100)<wfrac2:
+            print("better model found")
+            if j==0:
+                return True, results[:,j,:], results[:,j,:]
+            else:
+                #give back fit converged or not, best models, all models 
+                return True, results[:,j,:], results[:,0:j+1,:]
+    print("no better model found") 
+    #second parameter is noen will not be used later
+    return False, None, results 
