@@ -1775,6 +1775,10 @@ level22_open_variable=np.zeros((6))
 level22_discard_variable=np.zeros((6))
 level22_value_variable=np.zeros((7))
 level22_value_variable[3]=0.1
+#a mote carlo gaussian best result 
+level22_open_variable=np.array([-0.07820701,-0.24618614,-0.06755634 ,0.06325655,-0.03718775,-0.00551147])
+level22_discard_variable=np.array([-0.35621227 ,0.10688899 ,0.12334701,-0.08318814 ,0.00354336 ,0.00069561])
+level22_value_variable=np.array([0.25004914,0.03720256 ,0.07832001 ,0.0916222,-0.00783723,0.05945068,0.03285409])
 
 # draw function
 def draw(canvas):
