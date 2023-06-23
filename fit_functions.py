@@ -944,18 +944,19 @@ def get_new_parameters4(result,fact_new_par=1.5,fact_new_step_no=2.5,fact_new_st
         err=100*np.sqrt(np.sum(result[38,i,:])/np.sum(result[38,i,:])**2+np.sum(result[38,0,:])/np.sum(result[38,0,:])**2)
         diff=np.mean(result[40,i,:])-np.mean(result[40,0,:])
         #if really bad results or if significance less than 1 just use current base values 
-        if np.mean(result[40,i,:])>75 or abs(diff/err)<1:
+        #changing that it also works for very winning model 
+        if np.mean(result[40,i,:])-np.mean(result[40,0,:])>(100-np.mean(result[40,0,:]))*0.5 or abs(diff/err)<1:
             new_par[i-1]=result[18+i,0,0]
             if abs(diff/err)<1:
                 #direction cannot be known in thisc case increase it and change sign randomly
                 #was 3 before
                 new_steps[i-1]=fact_new_step_no*(result[18+i,i,0]-result[18+i,0,0])*np.sign(random.random()-0.5)
-            elif np.mean(result[40,i,:])<87:
+            elif np.mean(result[40,i,:])-np.mean(result[40,0,:])<(100-np.mean(result[40,0,:]))*0.75:
                 #reverse direction and less
                 new_steps[i-1]=-1/3*(result[18+i,i,0]-result[18+i,0,0])
-            elif np.mean(result[40,i,:])<94:
+            elif np.mean(result[40,i,:])-np.mean(result[40,0,:])<(100-np.mean(result[40,0,:]))*0.875:
                 new_steps[i-1]=-1/5*(result[18+i,i,0]-result[18+i,0,0])                 
-            elif np.mean(result[40,i,:])<97:
+            elif np.mean(result[40,i,:])-np.mean(result[40,0,:])<(100-np.mean(result[40,0,:]))*0.94:
                 new_steps[i-1]=-1/9*(result[18+i,i,0]-result[18+i,0,0])             
             else:
                 new_steps[i-1]=-1/17*(result[18+i,i,0]-result[18+i,0,0])               
