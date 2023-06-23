@@ -110,23 +110,36 @@ for i in range(19):
 #get change sclae
 logpar[3]=1.1/logpar[1]  
 #loading models
-allres2=np.load("mc_v9_all.npy")
-c=0
-list_open7=[]
-list_discard7=[]
-list_value7=[]
-#selecting models
-for i in range(850):
-    if np.mean(allres2[40,i,4:6])<45 and np.max(allres2[40,i,:])<60:
-        list_open7.append(allres2[19:25,i,0])
-        list_discard7.append(allres2[25:31,i,0])        
-        list_value7.append(allres2[31:38,i,0]) 
+
+allres2=np.load("mc_v9_all.npy")      
+moreruns3a=np.load('testbest26a_v2.npy')
+moreruns3b=np.load('testbest26b_v2.npy')
+moreruns3c=np.load('testbest26c_v2.npy')
+moreruns3=np.zeros((41,6,25))
+moreruns3[:,:,0:8]=moreruns3a[:,:,0:8]
+moreruns3[:,:,8:16]=moreruns3b[:,:,8:16]
+moreruns3[:,:,16:25]=moreruns3c[:,:,16:25]
+xmin=np.argmin(np.mean(moreruns3[40,:,:],0))
+
+sel_new=np.zeros((19,5))
+sel_new[:,0]=moreruns3[19:38,0,xmin]
+mcg2=np.load("mcg_v2_all.npy")
+
+c=1
+for i in range(6):
+
+    if np.mean(mcg2[40,:,:],0)[i]>31:
+        sel_new[:,c]=mcg2[0:19,0,i]
         c+=1
-print(f"{c} improved models found")        
-print("5 used to to test against")
-list_open8=list_open7[0:5]
-list_discard8=list_discard7[0:5]
-list_value8=list_value7[0:5]        
+
+list_open8=[]
+list_discard8=[]
+list_value8=[]
+for i in range(5):
+    list_open8.append(sel_new[0:6,i])
+    list_discard8.append(sel_new[6:12,i])
+    list_value8.append(sel_new[12:19,i])  
+        
 open_steps2=logpar[3,0:6]
 print("used steps are")
 print(open_steps2)
@@ -134,34 +147,25 @@ discard_steps2=logpar[3,6:12]
 print(discard_steps2)
 value_steps2=logpar[3,12:19]
 print(value_steps2)
-#load models properties best for monte carlo
-selected_models=np.load("testbest36_v1.npy")
-#select parameters
-good_models=selected_models[19:38,0,:]
-print(good_models.shape)
-#best of gradient 1 
-selected_models=np.load("gradient3_fit2_it07.npy")
-print(selected_models.shape)
-good_models=selected_models[19:38,0,:]
 
 start_time=time.time()
 #seeting up the fit 
 n_games=100
-max_iter=20
-output_name="gradient4_fit1_it"
+max_iter=50
+output_name="gradient4_fit2_it"
 #for starting is
 tolerance_one=2.0
 #for stopping is
-tolerance_later=0.5
-max_time=14
+tolerance_later=0.25
+max_time=16
 min_win=20
 #reduces step for steps which lead to negative win change 
 power_incr=1.5
 #using first of the good models 
-gradient_res,gradient_allres=gradient_fit4(list_open8,list_discard8,list_value8,good_models[0:6,0],good_models[6:12,0],good_models[12:19,0],open_steps2,discard_steps2,value_steps2,n_games=n_games,max_iter=max_iter,output_name=output_name,tolerance_one=tolerance_one,tolerance_later=tolerance_later,max_time=max_time,min_win=min_win,power_incr=power_incr)
+gradient_res,gradient_allres=gradient_fit4(list_open8,list_discard8,list_value8,np.zeros((6)),np.zeros((6)),np.zeros((7)),open_steps2,discard_steps2,value_steps2,n_games=n_games,max_iter=max_iter,output_name=output_name,tolerance_one=tolerance_one,tolerance_later=tolerance_later,max_time=max_time,min_win=min_win,power_incr=power_incr)
 #saving output 
-np.save('gradient4_fit1.npy',gradient_res)
-np.save('gradient4_fit1_all.npy',gradient_allres)
+np.save('gradient4_fit2.npy',gradient_res)
+np.save('gradient4_fit2_all.npy',gradient_allres)
 stop_time=time.time()
 print(f"Needed {np.round(stop_time-start_time,3)} seconds") 
 #not sure whether working could require harder condition for non initial test since then it is not chance
