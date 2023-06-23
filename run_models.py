@@ -153,7 +153,17 @@ for i in range(mcg1.shape[1]):
         print(np.mean(mcg1[40,i,:]))
         sel_modelg[:,csel]=mcg1[19:38,i,0]
         csel+=1
-print(f"{csel} are selected")    
+print(f"{csel} are selected")  
+
+mcg2=np.load("mcg_v2_all.npy")
+sel_modelg3=np.zeros((19,25))
+csel=0
+for i in range(mcg2.shape[1]):
+    if np.mean(mcg2[40,i,:])<25.0:
+        print(np.mean(mcg2[40,i,:]))
+        sel_modelg3[:,csel]=mcg2[19:38,i,0]
+        csel+=1
+print(f"{csel} are selected")
 
 allres2=np.load("mc_v9_all.npy")
 c=0
@@ -166,7 +176,7 @@ for i in range(850):
         list_discard7.append(allres2[25:31,i,0])        
         list_value7.append(allres2[31:38,i,0]) 
         c+=1
-allres8=np.zeros((41,6,23))
+allres8=np.zeros((41,6,25))
 start_time=time.time()
 n_games=400
 #all them with 400
@@ -184,12 +194,17 @@ n_games=400
 # 0 11 is testbest29a_v2.npy aa another rerun 
 # 11 23 is testbest29b_v2.npy  bb anotyher random rerun
 #now 400 again now of same 28 to 29.5 models 
-#0 10 is a
+#0 10 is testbest30a_v2.npy
+#10 to 20 is  testbest30b_v2.npy
+#20 to 34 is  testbest30c_v2.npy
 
-for i in range(0,10):
+#now better 25 got monte carlo gaussian 1
+#0 8 testbest26a_v2.npy
+
+for i in range(8,16):
     print(f"doing level 21 case {i}")
-    allres8[:,:,i]=run_level21(list_open7,list_discard7,list_value7,sel_modelg[0:6,i],sel_modelg[6:12,i],sel_modelg[12:19,i],n_games)
-np.save("testbest30a_v2.npy",allres8)
+    allres8[:,:,i]=run_level21(list_open7,list_discard7,list_value7,sel_modelg3[0:6,i],sel_modelg3[6:12,i],sel_modelg3[12:19,i],n_games)
+np.save("testbest26b_v2.npy",allres8)
 stop_time=time.time()
 print(f"{n_games} ran for {np.round(stop_time-start_time,2)} seconds") 
 
