@@ -134,15 +134,27 @@ selected_models[:,:,5:11]=set2b[:,:,5:11]
 
 print(selected_models.shape)
 good_models=selected_models[19:38,0,:]
-
+mcg1=np.load("mcg_v1_all.npy")
+sel_modelg=np.zeros((19,23))
+csel=0
+for i in range(mcg1.shape[1]):
+    if np.mean(mcg1[40,i,:])<28.0:
+        print(np.mean(mcg1[40,i,:]))
+        sel_modelg[:,csel]=mcg1[19:38,i,0]
+        csel+=1
+print(csel)        
 #factor to adjust scatter since native is too little 
-factor=10
+factor=8
 start_time=time.time()
 #best is 6
 x=6
-boolean,bestres,allres=montecarlo_trials3(list_open7,list_discard7,list_value7,good_models[0:6,x],good_models[6:12,x],good_models[12:19,x],factor*logpar[3,0:6],factor*logpar[3,6:12],factor*logpar[3,12:19],50,10,wfrac=0.001,wfrac2=0.002)
-#v10 on purpose impossible crieteria to just run all iterations with predictable operation duration
-np.save("mcg_v1_all.npy",allres)
+#now 11
+x=11
+print(sel_modelg[:,11])
+
+boolean,bestres,allres=montecarlo_trials3(list_open7,list_discard7,list_value7,sel_modelg[0:6,x],sel_modelg[6:12,x],sel_modelg[12:19,x],factor*logpar[3,0:6],factor*logpar[3,6:12],factor*logpar[3,12:19],50,500,wfrac=0.001,wfrac2=0.002)
+#v1 was factor of 12 and using good_model 11
+np.save("mcg_v2_all.npy",allres)
 stop_time=time.time()
 print(f"ran for {np.round(stop_time-start_time,2)} seconds")
 print(np.mean(allres[40,:,:],1))
@@ -150,4 +162,5 @@ print(np.std(np.mean(allres[40,:,:],1)))
 print(np.mean(np.mean(allres[40,:,:],1)))
 #factor 2 was std of 3 
 #factor 4 was std of 3 mean of 34
-#factor 10 was std of  , mean of 
+#factor 10 was std of  10, mean of 35 
+#factor 20 was std of 7 mean of 41
