@@ -176,9 +176,9 @@ for i in range(850):
         list_discard7.append(allres2[25:31,i,0])        
         list_value7.append(allres2[31:38,i,0]) 
         c+=1
-allres8=np.zeros((41,6,25))
-start_time=time.time()
-n_games=400
+
+
+
 #all them with 400
 #for 34 use good_model3
 #doing in pieces first 10 is testbest34a_v2.npy
@@ -200,11 +200,21 @@ n_games=400
 
 #now better 25 got monte carlo gaussian 1
 #0 8 testbest26a_v2.npy
+#8 16 testbest26b_v2.npy
+#16 25 testbest26c_v2.npy
+ 
 
-for i in range(8,16):
+#testbest_collect test collect function 
+tot_score_output=True
+allres8=np.zeros((int(41+tot_score_output),6,25))
+n_games=2
+start_time=time.time()
+
+for i in range(25):
     print(f"doing level 21 case {i}")
-    allres8[:,:,i]=run_level21(list_open7,list_discard7,list_value7,sel_modelg3[0:6,i],sel_modelg3[6:12,i],sel_modelg3[12:19,i],n_games)
-np.save("testbest26b_v2.npy",allres8)
+    allres8[:,:,i]=run_level21(list_open7,list_discard7,list_value7,sel_modelg3[0:6,i],sel_modelg3[6:12,i],sel_modelg3[12:19,i],n_games,tot_score_collect=tot_score_output)
+np.save("testbest_collect_v2.npy",allres8)
+
 stop_time=time.time()
 print(f"{n_games} ran for {np.round(stop_time-start_time,2)} seconds") 
 
