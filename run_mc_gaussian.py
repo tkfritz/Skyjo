@@ -151,16 +151,25 @@ x=6
 #now 11
 x=11
 print(sel_modelg[:,11])
+tot_score_output=True
 
-boolean,bestres,allres=montecarlo_trials3(list_open7,list_discard7,list_value7,sel_modelg[0:6,x],sel_modelg[6:12,x],sel_modelg[12:19,x],factor*logpar[3,0:6],factor*logpar[3,6:12],factor*logpar[3,12:19],50,500,wfrac=0.001,wfrac2=0.002)
+boolean,bestres,allres=montecarlo_trials3(list_open7,list_discard7,list_value7,sel_modelg[0:6,x],sel_modelg[6:12,x],sel_modelg[12:19,x],factor*logpar[3,0:6],factor*logpar[3,6:12],factor*logpar[3,12:19],50,5,wfrac=0.001,wfrac2=0.002,tot_score_collect=tot_score_output)
 #v1 was factor of 12 and using good_model 11
-np.save("mcg_v2_all.npy",allres)
+np.save("mcg_v3_all.npy",allres)
 stop_time=time.time()
 print(f"ran for {np.round(stop_time-start_time,2)} seconds")
-print(np.mean(allres[40,:,:],1))
-print(np.std(np.mean(allres[40,:,:],1)))
-print(np.mean(np.mean(allres[40,:,:],1)))
+
+print(f"mean win is {np.round(np.mean(np.mean(allres[40,:,:],1)),3)}  %")
+print(f"win standard deviation is {np.round(np.std(np.mean(allres[40,:,:],1)),3)} %")
+if allres.shape[0]==42:
+    print("also total score collected")
+    print(np.mean(allres[40,:,:],1))
+    print(np.mean(allres[41,:,:],1))
+    print(f"mean score differential is {np.round(np.mean(np.mean(allres[41,:,:],1)),3)}  points")
+    print(f"score differential standard deviation is {np.round(np.std(np.mean(allres[41,:,:],1)),3)} points")
 #factor 2 was std of 3 
 #factor 4 was std of 3 mean of 34
 #factor 10 was std of  10, mean of 35 
 #factor 20 was std of 7 mean of 41
+
+#5 50 wo output collection 372 seconds 
