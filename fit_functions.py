@@ -1118,10 +1118,16 @@ def gradient_fit4(open_vars,discard_vars,value_vars,base_open,base_discard,base_
 #wfrac when it aborts early
 #wfrac2 performance of worst case .
 #here mean and gauusian error araound it
-def montecarlo_trials3(open_vars,discard_vars,value_vars,open_mean,discard_mean,value_mean,open_std,discard_std,value_std,realizations,trials,wfrac=0.10,wfrac2=0.551):
+#save means how much output is save in False less is saved 
+def montecarlo_trials3(open_vars,discard_vars,value_vars,open_mean,discard_mean,value_mean,open_std,discard_std,value_std,realizations,trials,wfrac=0.10,wfrac2=0.551,tot_score_collect=False):
     n_it=realizations
-    results=np.zeros((41,trials,len(open_vars)))
+    if tot_score_collect==False:
+        results=np.zeros((41,trials,len(open_vars)))
+    else:
+        results=np.zeros((42,trials,len(open_vars)))     
     for j in range(trials):
+        #only needed for when score is collected 
+        tot_scores=np.zeros((2))
         print(f"doing Monte Carlo {j} for level 21")
         #create random values for level 21 within the ranges, save are used for all level 20 models
         level21_open_variable=np.zeros((6))
@@ -1155,7 +1161,11 @@ def montecarlo_trials3(open_vars,discard_vars,value_vars,open_mean,discard_mean,
                 nature=['computer','computer']
                 levels=[20,21]
                 it_counter+=1
-                winner=skyjo_game(names,nature,levels,0,True,False,level20_open_variable=level20_open_variable,level21_open_variable=level21_open_variable,level20_discard_variable=level20_discard_variable,level21_discard_variable=level21_discard_variable,level20_value_variable=level20_value_variable,level21_value_variable=level21_value_variable)
+                if tot_score_collect==False:
+                    winner=skyjo_game(names,nature,levels,0,True,tot_score_collect=False,level20_open_variable=level20_open_variable,level21_open_variable=level21_open_variable,level20_discard_variable=level20_discard_variable,level21_discard_variable=level21_discard_variable,level20_value_variable=level20_value_variable,level21_value_variable=level21_value_variable)
+                else:
+                    winner,tot_score=skyjo_game(names,nature,levels,0,True,tot_score_collect=True,level20_open_variable=level20_open_variable,level21_open_variable=level21_open_variable,level20_discard_variable=level20_discard_variable,level21_discard_variable=level21_discard_variable,level20_value_variable=level20_value_variable,level21_value_variable=level21_value_variable)   
+                    tot_scores+=tot_score
                 if winner[0]==1:
                     win20+=1
             #98% ownside win conditions tested here   2.33 sigma   stops early when new model clearly bad or good 
@@ -1164,13 +1174,19 @@ def montecarlo_trials3(open_vars,discard_vars,value_vars,open_mean,discard_mean,
                 nature=['computer','computer']
                 levels=[20,21]
                 it_counter+=1
-                winner=skyjo_game(names,nature,levels,0,True,False,level20_open_variable=level20_open_variable,level21_open_variable=level21_open_variable,level20_discard_variable=level20_discard_variable,level21_discard_variable=level21_discard_variable,level20_value_variable=level20_value_variable,level21_value_variable=level21_value_variable)
+                if tot_score_collect==False:
+                    winner=skyjo_game(names,nature,levels,0,True,tot_score_collect=False,level20_open_variable=level20_open_variable,level21_open_variable=level21_open_variable,level20_discard_variable=level20_discard_variable,level21_discard_variable=level21_discard_variable,level20_value_variable=level20_value_variable,level21_value_variable=level21_value_variable)
+                else:
+                    winner,tot_score=skyjo_game(names,nature,levels,0,True,tot_score_collect=True,level20_open_variable=level20_open_variable,level21_open_variable=level21_open_variable,level20_discard_variable=level20_discard_variable,level21_discard_variable=level21_discard_variable,level20_value_variable=level20_value_variable,level21_value_variable=level21_value_variable)   
+                    tot_scores+=tot_score                    
                 if winner[0]==1:
                     win20+=1                
             #now checking whether 98% sigficant on bad performance        
             results[38,j,k]=it_counter
             results[39,j,k]=win20
-            results[40,j,k]=100*win20/it_counter         
+            results[40,j,k]=100*win20/it_counter    
+            if tot_score_collect==True:
+                results[41,j,k]=(tot_scores[0]-tot_scores[1])/it_counter
             stop_time=time.time()
             print(f"{it_counter} games need {np.round(stop_time-start_time,3)} seconds")
             print(f"level 20 won to {np.round(results[40,j,k],1)} %")
