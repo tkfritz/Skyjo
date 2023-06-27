@@ -513,13 +513,19 @@ def gradient_fit2(open_vars,discard_vars,value_vars,base_open,base_discard,base_
     return results    
 
 #running asignle level 21 against a list of level 20 models 
-def run_level21(open_vars,discard_vars,value_vars,open_target,discard_target,value_target,n_games):
-    #getting the same level 21 model 
-    results=np.zeros((41,len(open_vars)))
+#tot_score collect of not 
+def run_level21(open_vars,discard_vars,value_vars,open_target,discard_target,value_target,n_games,tot_score_collect=False):
+    #different size
+    if tot_score_collect==False:
+       results=np.zeros((41,len(open_vars)))
+    else:
+       results=np.zeros((42,len(open_vars)))       
+    #getting the same level 21 model         
     level21_open_variable=np.array(open_target)
     level21_discard_variable=np.array(discard_target)      
     level21_value_variable=np.array(value_target)                 
     for k in range(len(open_vars)):
+        tot_scores=np.zeros((2))
         print(f"doing case {k} for level 20")
         level20_open_variable=np.array(open_vars[k])
         level20_discard_variable=np.array(discard_vars[k])
@@ -536,12 +542,18 @@ def run_level21(open_vars,discard_vars,value_vars,open_target,discard_target,val
             names=['alpha','beta']
             nature=['computer','computer']
             levels=[20,21]
-            winner=skyjo_game(names,nature,levels,0,True,False,level20_open_variable=level20_open_variable,level21_open_variable=level21_open_variable,level20_discard_variable=level20_discard_variable,level21_discard_variable=level21_discard_variable,level20_value_variable=level20_value_variable,level21_value_variable=level21_value_variable)
+            if tot_score_collect==False:
+                winner=skyjo_game(names,nature,levels,0,True,tot_score_collect=False,level20_open_variable=level20_open_variable,level21_open_variable=level21_open_variable,level20_discard_variable=level20_discard_variable,level21_discard_variable=level21_discard_variable,level20_value_variable=level20_value_variable,level21_value_variable=level21_value_variable)
+            else:
+                winner,tot_score=skyjo_game(names,nature,levels,0,True,tot_score_collect=True,level20_open_variable=level20_open_variable,level21_open_variable=level21_open_variable,level20_discard_variable=level20_discard_variable,level21_discard_variable=level21_discard_variable,level20_value_variable=level20_value_variable,level21_value_variable=level21_value_variable)   
+                tot_scores+=tot_score              
             if winner[0]==1:
                 win20+=1                    
             results[38,k]=n_games
             results[39,k]=win20
             results[40,k]=100*win20/n_games     
+            if tot_score_collect==True:
+                results[41,k]=(tot_scores[0]-tot_scores[1])/n_games
             stop_time=time.time()
         print(f"{n_games} games need {np.round(stop_time-start_time,3)} seconds")
         print(f"level 20 won to {np.round(results[40,k],1)} %")
