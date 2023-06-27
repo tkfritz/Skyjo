@@ -1670,8 +1670,9 @@ def skyjo_round(names,nature,levels,pause,first_round,silent=True,output=False,l
 #pause length (can be zero) 
 #printing optional 
 #output collection optional 
+#tot_score_collect total score passed or not 
 #optinal model paramters for level 20 and 21, needed for use in fits 
-def skyjo_game(names,nature,levels,pause,silent=True,output=False,level20_open_variable=np.zeros((6)),level21_open_variable=np.zeros((6)),level20_discard_variable=np.zeros((6)),level21_discard_variable=np.zeros((6)),level20_value_variable=np.zeros((7)),level21_value_variable=np.zeros((7))):
+def skyjo_game(names,nature,levels,pause,silent=True,output=False,tot_score_collect=False,level20_open_variable=np.zeros((6)),level21_open_variable=np.zeros((6)),level20_discard_variable=np.zeros((6)),level21_discard_variable=np.zeros((6)),level20_value_variable=np.zeros((7)),level21_value_variable=np.zeros((7))):
     #check whether parameters are allowed and defined)
     allowed=allowed_modes(names,nature,levels)
     #report and abort when not defined            
@@ -1758,8 +1759,10 @@ def skyjo_game(names,nature,levels,pause,silent=True,output=False,level20_open_v
                 return final, winner
             else:
                 #no numeric, output just winner
-                return winner   
-   
+                if tot_score_collect==False:
+                    return winner   
+                else:
+                    return winner, tot_score      
 # draw function
 def draw(canvas):
     global pile_open,pile_closed, players,card_b, card_a, step, discard, take_open, player, end_score, player, tot_score, start_screen
