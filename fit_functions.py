@@ -1213,3 +1213,65 @@ def montecarlo_trials3(open_vars,discard_vars,value_vars,open_mean,discard_mean,
     print("no better model found") 
     #second parameter is noen will not be used later
     return False, None, results 
+
+
+#now real gradient NotImplement
+# past fit result,  factor for next base is divided by signifciance
+#factor on step when not significant
+#border step below which step is increased somewhat
+#power factor factor to decrease step for positive 
+#min_sigma minium required significance to care 
+#alpha factor of step, alpha 1 means euqal to largest test step (right direction( is done 
+def get_new_parameters5(result,fact_new_step_no=2.5,border_sigma_step=2.0,power_incr=1.0,min_sigma=1.0,alpha=1.0):
+    new_par=np.zeros(19)
+    new_steps=np.zeros(19)
+    #collect significant differences which are then considered or not 
+    diffs=np.zerors(20)
+    for i in range(1,20):
+        err=100*np.sqrt(np.sum(result[38,i,:])/np.sum(result[38,i,:])**2+np.sum(result[38,0,:])/np.sum(result[38,0,:])**2)
+        diff=np.mean(result[40,i,:])-np.mean(result[40,0,:])
+        #if really bad results or if significance less than 1 just use current base values 
+        #changing that it also works for very winning model 
+        if np.mean(result[40,i,:])-np.mean(result[40,0,:])>(100-np.mean(result[40,0,:]))*0.5 or abs(diff/err)<min_sigma:
+            new_par[i-1]=result[18+i,0,0]
+            diffs[i]=0
+            if abs(diff/err)<min_sigma:
+                #direction cannot be known in thisc case increase it and change sign randomly
+                #was 3 before
+                new_steps[i-1]=fact_new_step_no*(result[18+i,i,0]-result[18+i,0,0])*np.sign(random.random()-0.5)
+            elif np.mean(result[40,i,:])-np.mean(result[40,0,:])<(100-np.mean(result[40,0,:]))*0.75:
+                #reverse direction and less
+                new_steps[i-1]=-1/3*(result[18+i,i,0]-result[18+i,0,0])
+            elif np.mean(result[40,i,:])-np.mean(result[40,0,:])<(100-np.mean(result[40,0,:]))*0.875:
+                new_steps[i-1]=-1/5*(result[18+i,i,0]-result[18+i,0,0])                 
+            elif np.mean(result[40,i,:])-np.mean(result[40,0,:])<(100-np.mean(result[40,0,:]))*0.94:
+                new_steps[i-1]=-1/9*(result[18+i,i,0]-result[18+i,0,0])             
+            else:
+                new_steps[i-1]=-1/17*(result[18+i,i,0]-result[18+i,0,0])               
+        #else use the tried step
+        else:
+            # if good trend found just collect the gradients 
+            if diff<0:
+                diffs[i]=diff/err
+            #potential smaller witha power
+            else:
+                diffs[i]=(diff/err)**(1/power_incr)
+    #do now all which are have significant and goood chance
+    print(diffs)
+    for i in range(1,20):  
+        if diffs[i]!=0:
+            if diffs[i]<0:
+                #now real gradient step made small with factor relative to largest 
+                new_par[i-1]=result[18+i,0,0]+(-result[18+i,i,0]+result[18+i,0,0])*np.sign(diff)*alpha*diffs[i]/np.max(np.abs(diffs))
+                #if step small increase
+                if np.abs(border_sigma_step/diffs[i])<fact_new_step_sig:
+                    new_steps[i-1]=-border_sigma_step/diffs[i]*(result[18+i,i,0]-result[18+i,0,0])
+                #otherwise just keep
+                else:
+                    new_steps[i-1]=(result[18+i,i,0]-result[18+i,0,0])
+            else:
+                #for base potential smaller with a power
+                new_par[i-1]=result[18+i,0,0]+(-result[18+i,i,0]+result[18+i,0,0])*np.sign(diff)*alpha*diffs[i]/np.max(np.abs(diffs))
+                #here continous decrease because more likely too large otherwise 
+                new_steps[i-1]=-border_sigma_step*(result[18+i,i,0]-result[18+i,0,0])/diffs[i]**power_incr            
+    return new_par,new_steps 
