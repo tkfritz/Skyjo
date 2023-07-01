@@ -128,7 +128,7 @@ mcg2=np.load("mcg_v2_all.npy")
 c=1
 for i in range(6):
 
-    if np.mean(mcg2[40,:,:],0)[i]>31:
+    if np.mean(mcg2[40,:,:],0)[i]>30.5:
         sel_new[:,c]=mcg2[0:19,0,i]
         c+=1
 
@@ -152,20 +152,25 @@ start_time=time.time()
 #seeting up the fit 
 n_games=100
 max_iter=50
-output_name="gradient4_fit2_it"
+output_name="gradient4_fit3_it"
 #for starting is
-tolerance_one=2.0
+tolerance_one=1.75
 #for stopping is
 tolerance_later=0.25
-max_time=16
+max_time=15
 min_win=20
 #reduces step for steps which lead to negative win change 
-power_incr=1.5
+power_incr=1.75
+max_base_iter=20
+fact_new_par2=2.0
+fact_new_step_no2=2.5
+fact_new_step_sig2=2.25
 #using first of the good models 
-gradient_res,gradient_allres=gradient_fit4(list_open8,list_discard8,list_value8,np.zeros((6)),np.zeros((6)),np.zeros((7)),open_steps2,discard_steps2,value_steps2,n_games=n_games,max_iter=max_iter,output_name=output_name,tolerance_one=tolerance_one,tolerance_later=tolerance_later,max_time=max_time,min_win=min_win,power_incr=power_incr)
+gradient_res,gradient_allres=gradient_fit4(list_open8,list_discard8,list_value8,np.zeros((6)),np.zeros((6)),np.zeros((7)),4*open_steps2,4*discard_steps2,4*value_steps2,n_games=n_games,max_iter=max_iter,output_name=output_name,tolerance_one=tolerance_one,tolerance_later=tolerance_later,max_time=max_time,min_win=min_win,power_incr=power_incr,fact_new_par2=fact_new_par2,fact_new_step_no2=fact_new_step_no2,fact_new_step_sig2=fact_new_step_sig2,max_base_iter=max_base_iter)
 #saving output 
-np.save('gradient4_fit2.npy',gradient_res)
-np.save('gradient4_fit2_all.npy',gradient_allres)
+np.save('gradient4_fit3.npy',gradient_res)
+np.save('gradient4_fit3_all.npy',gradient_allres)
 stop_time=time.time()
 print(f"Needed {np.round(stop_time-start_time,3)} seconds") 
-#not sure whether working could require harder condition for non initial test since then it is not chance
+#4_2 used n_games=100 max_iter=50 tolerance_one=2.0 tolerance_later=0.25 max_time=16 min_win=20 power_incr=1.5, 1*open_steps 
+#problem could be that a 1.01 sigma step; is taken too serious, maybe should only be used for exploring not more
