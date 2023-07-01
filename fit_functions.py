@@ -1290,7 +1290,7 @@ def get_new_parameters5(result,fact_new_step_no=2.5,border_sigma_step=2.0,power_
 #maximum number of steps to improve base
 #max_time the maximum time in hours allowed
 #min_win  win in pecentage when it go below then it is aborted early 
-def gradient_fit5(open_vars,discard_vars,value_vars,base_open,base_discard,base_value,open_step,discard_step,value_step,n_games=100,max_iter=10,output_name="gradient5_fit1_it",alpha2=1.0,fact_new_step_no2=2.5,border_sigma_step2=2.0,min_sigma2=1.0,,power_incr2=1.,tolerance_one=1.5,tolerance_later=1.5,max_base_iter=10,max_time=100,min_win=0.):
+def gradient_fit5(open_vars,discard_vars,value_vars,base_open,base_discard,base_value,open_step,discard_step,value_step,n_games=100,max_iter=10,output_name="gradient5_fit1_it",alpha2=1.0,fact_new_step_no2=2.5,border_sigma_step2=2.0,min_sigma2=1.0,power_incr2=1.,tolerance_one=1.5,tolerance_later=1.5,max_base_iter=10,max_time=100,min_win=0.):
     #start_time for stopping running when too long, still not working seem to be recreated too often
     full_start_time=time.time()
     #to save parameters and steps 
