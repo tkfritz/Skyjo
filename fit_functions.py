@@ -1226,7 +1226,7 @@ def get_new_parameters5(result,fact_new_step_no=2.5,border_sigma_step=2.0,power_
     new_par=np.zeros(19)
     new_steps=np.zeros(19)
     #collect significant differences which are then considered or not 
-    diffs=np.zerors(20)
+    diffs=np.zeros(20)
     for i in range(1,20):
         err=100*np.sqrt(np.sum(result[38,i,:])/np.sum(result[38,i,:])**2+np.sum(result[38,0,:])/np.sum(result[38,0,:])**2)
         diff=np.mean(result[40,i,:])-np.mean(result[40,0,:])
