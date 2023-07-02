@@ -1227,9 +1227,24 @@ def get_new_parameters5(result,fact_new_step_no=2.5,border_sigma_step=2.0,power_
     new_steps=np.zeros(19)
     #collect significant differences which are then considered or not 
     diffs=np.zeros(20)
+    ndiffs=np.zeros(20)
     for i in range(1,20):
-        err=100*np.sqrt(np.sum(result[38,i,:])/np.sum(result[38,i,:])**2+np.sum(result[38,0,:])/np.sum(result[38,0,:])**2)
+        p1=np.mean(result[40,i,:])/100
+        p2=np.mean(result[40,0,:])/100
+        n1=p.sum(result[38,i,:])
+        n2=p.sum(result[38,0,:])     
+        #if zero or one adds/subtract one is not perfect likely but for now 
+        if p1==1:
+            p1=1-1/n1
+        if p1==0:
+            p1=1/n1
+        if p2==1:
+            p2=1-1/n2
+        if p2==0:
+            p2=1/n2            
+        err=100*np.sqrt(p1*(1-p1)/n1+p2*(1-p2)/n2)
         diff=np.mean(result[40,i,:])-np.mean(result[40,0,:])
+        ndiffs[i]=diff/err
         #if really bad results or if significance less than 1 just use current base values 
         #changing that it also works for very winning model 
         if np.mean(result[40,i,:])-np.mean(result[40,0,:])>(100-np.mean(result[40,0,:]))*0.5 or abs(diff/err)<min_sigma:
@@ -1256,6 +1271,7 @@ def get_new_parameters5(result,fact_new_step_no=2.5,border_sigma_step=2.0,power_
             #potential smaller witha power
             else:
                 diffs[i]=(diff/err)**(1/power_incr)
+    print(ndiffs)            
     #do now all which are have significant and goood chance
     print(diffs)
     for i in range(1,20):  
@@ -1264,7 +1280,7 @@ def get_new_parameters5(result,fact_new_step_no=2.5,border_sigma_step=2.0,power_
                 #now real gradient step made small with factor relative to largest 
                 new_par[i-1]=result[18+i,0,0]+(-result[18+i,i,0]+result[18+i,0,0])*np.sign(diff)*alpha*diffs[i]/np.max(np.abs(diffs))
                 #if step small increase
-                if np.abs(border_sigma_step/diffs[i])<fact_new_step_sig:
+                if np.abs(border_sigma_step/diffs[i])<border_sigma_step:
                     new_steps[i-1]=-border_sigma_step/diffs[i]*(result[18+i,i,0]-result[18+i,0,0])
                 #otherwise just keep
                 else:
