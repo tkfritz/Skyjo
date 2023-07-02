@@ -160,11 +160,11 @@ tolerance_one=1.75
 #for stopping is
 tolerance_later=0.25
 #running time hours, only checked at that of iteration 
-max_time=20
+max_time=5
 #minium win percent other stop conditions
 min_win=20
 #reduces step for steps which lead to negative win change 
-power_incr=1.00
+power_incr=1.5
 #iteration number to avoid decrease 
 max_base_iter=30
 #factoir increase when not significant
@@ -172,16 +172,17 @@ fact_new_step_no=2.5
 #range in which step size increases
 border_sigma_step=2.0
 #minium required step szie to care 
-min_sigma=1.0 #about that bothsided a chance recruirer has only probablity of 50% tried but got nothing
+min_sigma=1.9 #about that bothsided a chance recruirer has only probablity of 50% tried but got nothing
 #now standatd now 
 #base step size compaer to larged in step
 alpha=1.0
+fac=1.0
 #using first of the good models 
-gradient_res,gradient_allres=gradient_fit5(list_open8,list_discard8,list_value8,np.zeros((6)),np.zeros((6)),np.zeros((7)),4*open_steps2,4*discard_steps2,4*value_steps2,n_games=n_games,max_iter=max_iter,output_name=output_name,tolerance_one=tolerance_one,tolerance_later=tolerance_later,max_time=max_time,min_win=min_win,power_incr2=power_incr,fact_new_step_no2=fact_new_step_no,max_base_iter=max_base_iter,min_sigma2=min_sigma,alpha2=alpha,border_sigma_step2=border_sigma_step)
+gradient_res,gradient_allres=gradient_fit5(list_open8,list_discard8,list_value8,np.zeros((6)),np.zeros((6)),np.zeros((7)),fac*open_steps2,fac*discard_steps2,fac*value_steps2,n_games=n_games,max_iter=max_iter,output_name=output_name,tolerance_one=tolerance_one,tolerance_later=tolerance_later,max_time=max_time,min_win=min_win,power_incr2=power_incr,fact_new_step_no2=fact_new_step_no,max_base_iter=max_base_iter,min_sigma2=min_sigma,alpha2=alpha,border_sigma_step2=border_sigma_step)
 #saving output 
 np.save('gradient5_fit1.npy',gradient_res)
 np.save('gradient5_fit1_all.npy',gradient_allres)
 stop_time=time.time()
 print(f"Needed {np.round(stop_time-start_time,3)} seconds") 
-#is first fit tried mean_sigma=1.9 never useful in  15
+#now sigma corrected and some power increase
 
