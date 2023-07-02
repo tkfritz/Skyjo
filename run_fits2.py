@@ -172,7 +172,8 @@ fact_new_step_no=2.5
 #range in which step size increases
 border_sigma_step=2.0
 #minium required step szie to care 
-min_sigma=1.9 #about that bothsided a chance recruirer has only probablity of 50%
+min_sigma=1.0 #about that bothsided a chance recruirer has only probablity of 50% tried but got nothing
+#now standatd now 
 #base step size compaer to larged in step
 alpha=1.0
 #using first of the good models 
@@ -182,4 +183,5 @@ np.save('gradient5_fit1.npy',gradient_res)
 np.save('gradient5_fit1_all.npy',gradient_allres)
 stop_time=time.time()
 print(f"Needed {np.round(stop_time-start_time,3)} seconds") 
-#is first fit 
+#is first fit tried mean_sigma=1.9 never useful in  15
+
