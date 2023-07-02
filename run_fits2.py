@@ -151,7 +151,7 @@ print(value_steps2)
 start_time=time.time()
 #seeting up the fit 
 #number games per iteration
-n_games=10
+n_games=100
 #number of iterations
 max_iter=50
 output_name="gradient5_fit2_it"
@@ -160,17 +160,17 @@ tolerance_one=1.75
 #for stopping is
 tolerance_later=0.25
 #running time hours, only checked at that of iteration 
-max_time=0.05 #later 14
+max_time=14 
 #minium win percent other stop conditions
 min_win=20
 #reduces step for steps which lead to negative win change 
-power_incr=1.75
+power_incr=1.75 #smaller since negative changes seem less likely succcesul
 #iteration number to avoid decrease 
 max_base_iter=30
 #factor increase when not significant, now smaller 
 fact_new_step_no=1.5
 #range in which step size increases
-border_sigma_step=3.0
+border_sigma_step=3.0 #larger because divded by sigma 
 #minium required step szie to care 
 min_sigma=2.0 #now a little larger than 50% chnage probablity  
 #base step size compaer to larged in step
