@@ -1229,20 +1229,8 @@ def get_new_parameters5(result,fact_new_step_no=2.5,border_sigma_step=2.0,power_
     diffs=np.zeros(20)
     ndiffs=np.zeros(20)
     for i in range(1,20):
-        p1=np.mean(result[40,i,:])/100
-        p2=np.mean(result[40,0,:])/100
-        n1=p.sum(result[38,i,:])
-        n2=p.sum(result[38,0,:])     
-        #if zero or one adds/subtract one is not perfect likely but for now 
-        if p1==1:
-            p1=1-1/n1
-        if p1==0:
-            p1=1/n1
-        if p2==1:
-            p2=1-1/n2
-        if p2==0:
-            p2=1/n2            
-        err=100*np.sqrt(p1*(1-p1)/n1+p2*(1-p2)/n2)
+        #apply get error function
+        err=get_error_binary2(result[40,0,:],result[40,i,:],result[38,0,:],result[38,i,:])
         diff=np.mean(result[40,i,:])-np.mean(result[40,0,:])
         ndiffs[i]=diff/err
         #if really bad results or if significance less than 1 just use current base values 
@@ -1352,7 +1340,8 @@ def gradient_fit5(open_vars,discard_vars,value_vars,base_open,base_discard,base_
                 if all_base_results[41,j,0]==i and all_base_results[42,j,0]>maxv:
                     maxv=all_base_results[42,j,0]
                     index_max=j
-            err=100*np.sqrt(np.sum(base_res[38,:])/np.sum(base_res[38,:])**2+np.sum(all_base_results[38,index_max,:])/np.sum(all_base_results[38,index_max,:])**2)
+            #also using error function here         
+            err=get_error_binary2(base_res[40,:],all_base_results[40,index_max,:],base_res[38,:],all_base_results[38,index_max,:])
             diff=np.mean(base_res[40,:])-np.mean(all_base_results[40,index_max,:])
             #tolerance one here can be less strict 
             if diff/err>tolerance_one:
@@ -1428,3 +1417,21 @@ def gradient_fit5(open_vars,discard_vars,value_vars,base_open,base_discard,base_
         discard_step=new_step1[6:12]
         value_step=new_step1[12:19]
     return results, all_base_results[:,0:all_base,:]    
+
+#eror for binary data 2 values added together, small n effects not considered well
+def get_error_binary2(win_main,win_other,games_main,games_other):
+        p1=np.mean(win_main)/100
+        p2=np.mean(win_other)/100
+        n1=np.sum(games_main)
+        n2=np.sum(games_other)     
+        #if zero or one adds/subtract one is not perfect likely but for now 
+        if p1==1:
+            p1=1-1/n1
+        elif p1==0:
+            p1=1/n1
+        if p2==1:
+            p2=1-1/n2
+        elif p2==0:
+            p2=1/n2            
+        err=100*np.sqrt(p1*(1-p1)/n1+p2*(1-p2)/n2)
+        return err
