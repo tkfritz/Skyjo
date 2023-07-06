@@ -1294,17 +1294,34 @@ def get_new_parameters5(result,fact_new_step_no=2.5,border_sigma_step=2.0,power_
 #maximum number of steps to improve base
 #max_time the maximum time in hours allowed
 #min_win  win in pecentage when it go below then it is aborted early 
-def gradient_fit5(open_vars,discard_vars,value_vars,base_open,base_discard,base_value,open_step,discard_step,value_step,n_games=100,max_iter=10,output_name="gradient5_fit1_it",alpha2=1.0,fact_new_step_no2=2.5,border_sigma_step2=2.0,min_sigma2=1.0,power_incr2=1.,tolerance_one=1.5,tolerance_later=1.5,max_base_iter=10,max_time=100,min_win=0.):
+#error version for base
+#restarted fit (true or false)
+#give old results in old_results and old_base 
+def gradient_fit5(open_vars,discard_vars,value_vars,base_open,base_discard,base_value,open_step,discard_step,value_step,n_games=100,max_iter=10,output_name="gradient5_fit1_it",alpha2=1.0,fact_new_step_no2=2.5,border_sigma_step2=2.0,min_sigma2=1.0,power_incr2=1.,tolerance_one=1.5,tolerance_later=1.5,max_base_iter=10,max_time=100,min_win=0.,error_version_base=1,restart=False,old_result=None,old_base=None):
     #start_time for stopping running when too long, still not working seem to be recreated too often
     full_start_time=time.time()
-    #to save parameters and steps 
-    results=np.zeros((19,max_iter,2))
-    #to save base steps also not used onces, is large created plan is not to use all 3 more to insert different counters
-    all_base_results=np.zeros((44,max_iter*100,len(open_vars)))
-    #counter of all base models 
-    all_base=0
+    #if new fit and no restart
+    if restart==False:
+        #to save parameters and steps 
+        results=np.zeros((19,max_iter,2))
+        #to save base steps also not used onces, is large created plan is not to use all 3 more to insert different counters
+        all_base_results=np.zeros((44,max_iter*100,len(open_vars)))
+        $counter here yero 
+        start_i=0
+        all_base=0 
+    else:
+        #here previous results are filled in first 
+        results=np.zeros((19,max_iter,2))
+        results[:,old_result.shape[1],:]=old_result
+        #to save base steps also not used onces, is large created plan is not to use all 3 more to insert different counters
+        all_base_results=np.zeros((44,max_iter*100,len(open_vars)))
+        all_base_results[:,old_base.shape[1],:]=old_base
+        start_i=old_result.shape[1]
+        all_base=old_base.shape[1]
+        
+
     #first setp does for sure 
-    for i in range(max_iter):
+    for i in range(start_i,max_iter):
         #time to use as delyta time in check 
         if i>0:
             hours=(time.time()-full_start_time)/3600.
@@ -1341,7 +1358,7 @@ def gradient_fit5(open_vars,discard_vars,value_vars,base_open,base_discard,base_
                     maxv=all_base_results[42,j,0]
                     index_max=j
             #also using error function here         
-            err=get_error_binary2(base_res[40,:],all_base_results[40,index_max,:],base_res[38,:],all_base_results[38,index_max,:])
+            err=get_error_binary2(base_res[40,:],all_base_results[40,index_max,:],base_res[38,:],all_base_results[38,index_max,:],version=error_version_base)
             diff=np.mean(base_res[40,:])-np.mean(all_base_results[40,index_max,:])
             #tolerance one here can be less strict 
             if diff/err>tolerance_one:
