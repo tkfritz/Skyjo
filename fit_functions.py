@@ -1230,7 +1230,7 @@ def get_new_parameters5(result,fact_new_step_no=2.5,border_sigma_step=2.0,power_
     ndiffs=np.zeros(20)
     for i in range(1,20):
         #apply get error function
-        err=get_error_binary2(result[40,0,:],result[40,i,:],result[38,0,:],result[38,i,:])
+        err=get_error_binary2(result[40,0,:],result[40,i,:],result[38,0,:],result[38,i,:]
         diff=np.mean(result[40,i,:])-np.mean(result[40,0,:])
         ndiffs[i]=diff/err
         #if really bad results or if significance less than 1 just use current base values 
@@ -1419,7 +1419,10 @@ def gradient_fit5(open_vars,discard_vars,value_vars,base_open,base_discard,base_
     return results, all_base_results[:,0:all_base,:]    
 
 #eror for binary data 2 values added together, small n effects not considered well
-def get_error_binary2(win_main,win_other,games_main,games_other):
+#has version 1 is mostly gaussian
+#0 is too large errors by using 50% assumption
+def get_error_binary2(win_main,win_other,games_main,games_other,version=1):
+    if version==1:
         p1=np.mean(win_main)/100
         p2=np.mean(win_other)/100
         n1=np.sum(games_main)
@@ -1435,3 +1438,7 @@ def get_error_binary2(win_main,win_other,games_main,games_other):
             p2=1/n2            
         err=100*np.sqrt(p1*(1-p1)/n1+p2*(1-p2)/n2)
         return err
+    elif version==0:
+        err=100*np.sqrt(np.sum(games_main)/games_main)**2+np.sum(games_other)/np.sum(games_other)**2)
+        return err
+     
