@@ -1230,7 +1230,7 @@ def get_new_parameters5(result,fact_new_step_no=2.5,border_sigma_step=2.0,power_
     ndiffs=np.zeros(20)
     for i in range(1,20):
         #apply get error function
-        err=get_error_binary2(result[40,0,:],result[40,i,:],result[38,0,:],result[38,i,:]
+        err=get_error_binary2(result[40,0,:],result[40,i,:],result[38,0,:],result[38,i,:])
         diff=np.mean(result[40,i,:])-np.mean(result[40,0,:])
         ndiffs[i]=diff/err
         #if really bad results or if significance less than 1 just use current base values 
@@ -1306,16 +1306,17 @@ def gradient_fit5(open_vars,discard_vars,value_vars,base_open,base_discard,base_
         results=np.zeros((19,max_iter,2))
         #to save base steps also not used onces, is large created plan is not to use all 3 more to insert different counters
         all_base_results=np.zeros((44,max_iter*100,len(open_vars)))
-        $counter here yero 
+        #counter here zero 
         start_i=0
         all_base=0 
     else:
         #here previous results are filled in first 
+        #still need to load the results outsside for first value and step 
         results=np.zeros((19,max_iter,2))
-        results[:,old_result.shape[1],:]=old_result
+        results[:,0:old_result.shape[1],:]=old_result
         #to save base steps also not used onces, is large created plan is not to use all 3 more to insert different counters
         all_base_results=np.zeros((44,max_iter*100,len(open_vars)))
-        all_base_results[:,old_base.shape[1],:]=old_base
+        all_base_results[:,0:old_base.shape[1],:]=old_base
         start_i=old_result.shape[1]
         all_base=old_base.shape[1]
         
@@ -1323,7 +1324,7 @@ def gradient_fit5(open_vars,discard_vars,value_vars,base_open,base_discard,base_
     #first setp does for sure 
     for i in range(start_i,max_iter):
         #time to use as delyta time in check 
-        if i>0:
+        if i>start_i and restart==False:
             hours=(time.time()-full_start_time)/3600.
             print(f"ran for {np.round(hours,3)} hours")
             win_percentage=np.mean(base_res[40,:])
@@ -1333,7 +1334,7 @@ def gradient_fit5(open_vars,discard_vars,value_vars,base_open,base_discard,base_
                 if win_percentage<=min_win:    
                     print(f"fit ends early because win limit of {min_win} reached")
                     #ending with early return 
-                return results[:,0:i,:], all_base_results[:,0:all_base,:]   
+                return results[:,0:i,:], all_base_results[:,0:all_base,:]              
         #add some end conditions time and already good enough fit 
         print(f"doing iteration {i}")
         print("doing base step")
@@ -1456,6 +1457,6 @@ def get_error_binary2(win_main,win_other,games_main,games_other,version=1):
         err=100*np.sqrt(p1*(1-p1)/n1+p2*(1-p2)/n2)
         return err
     elif version==0:
-        err=100*np.sqrt(np.sum(games_main)/games_main)**2+np.sum(games_other)/np.sum(games_other)**2)
+        err=100*np.sqrt(np.sum(games_main)/np.sum(games_main)**2+np.sum(games_other)/np.sum(games_other)**2)
         return err
      
