@@ -1296,8 +1296,8 @@ def get_new_parameters5(result,fact_new_step_no=2.5,border_sigma_step=2.0,power_
 #min_win  win in pecentage when it go below then it is aborted early 
 #error version for base
 #restarted fit (true or false)
-#give old results in old_results and old_base 
-def gradient_fit5(open_vars,discard_vars,value_vars,base_open,base_discard,base_value,open_step,discard_step,value_step,n_games=100,max_iter=10,output_name="gradient5_fit1_it",alpha2=1.0,fact_new_step_no2=2.5,border_sigma_step2=2.0,min_sigma2=1.0,power_incr2=1.,tolerance_one=1.5,tolerance_later=1.5,max_base_iter=10,max_time=100,min_win=0.,error_version_base=1,restart=False,old_result=None,old_base=None):
+#give old summarrizing results in old_results and old_base, last last_it last full result file 
+def gradient_fit5(open_vars,discard_vars,value_vars,base_open,base_discard,base_value,open_step,discard_step,value_step,n_games=100,max_iter=10,output_name="gradient5_fit1_it",alpha2=1.0,fact_new_step_no2=2.5,border_sigma_step2=2.0,min_sigma2=1.0,power_incr2=1.,tolerance_one=1.5,tolerance_later=1.5,max_base_iter=10,max_time=100,min_win=0.,error_version_base=1,restart=False,old_result=None,old_base=None,last_it=None):
     #start_time for stopping running when too long, still not working seem to be recreated too often
     full_start_time=time.time()
     #if new fit and no restart
@@ -1368,6 +1368,8 @@ def gradient_fit5(open_vars,discard_vars,value_vars,base_open,base_discard,base_
                 while diff/err>tolerance_later and base_it<max_base_iter:
                     print(f"doing iteration {base_it} for improving base value")
                     #decrease base step size each time by sqrt(2)
+                    if restart==True and i==start_i:
+                        resgrad2=last_it
                     new_par1,new_step1=get_new_parameters5(resgrad2,fact_new_step_no=fact_new_step_no2,border_sigma_step=border_sigma_step2,power_incr=power_incr2,min_sigma=min_sigma2,alpha=alpha2/np.sqrt(2)**base_it)
                     results[:,i-1,0]=new_par1
                     results[:,i-1,1]=new_step1  
