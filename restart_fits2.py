@@ -75,16 +75,17 @@ start_time=time.time()
 #same parameters as 5_1 
 #seeting up the fit 
 #number games per iteration
-n_games=2
+n_games=100
 #number of iterations
-max_iter=50
-output_name="gradient5_fit1_it"
+max_iter=60
+#slightly changed name 
+output_name="gradient5_fit1b_it"
 #tolerance for getting worse in step (sigma) is first 
 tolerance_one=1.75
 #for stopping is
 tolerance_later=0.25
 #running time hours, only checked at that of iteration 
-max_time=0.05
+max_time=9
 #minium win percent other stop conditions
 min_win=20
 #reduces step for steps which lead to negative win change 
@@ -99,15 +100,17 @@ border_sigma_step=2.0 #larger because divded by sigma
 min_sigma=1.9 #now a little larger than 50% chnage probablity  
 #base step size compaer to larged in step
 alpha=1.0
-#fac=1.0
+fac=2.0 #step reduced by factor 2 because produce to large value /2 did do nearly nothing (7.937316927022633->7.700146102510005) because of power? 
 error_version_base2=0
 #old iteration for restart 
 old_result=np.load('gradient5_fit1.npy')
 
 old_base=np.load('gradient5_fit1_all.npy')
 #old_result contain main and gradient step to be used 
+
+last_it2=np.load('gradient5_fit1_it007.npy')
         
-gradient_res,gradient_allres=gradient_fit5(list_open8,list_discard8,list_value8,old_result[0:6,old_result.shape[1]-1,0],old_result[6:12,old_result.shape[1]-1,0],old_result[12:19,old_result.shape[1]-1,0],old_result[0:6,old_result.shape[1]-1,1],old_result[6:12,old_result.shape[1]-1,1],old_result[12:19,old_result.shape[1]-1,1],n_games=n_games,max_iter=max_iter,output_name=output_name,tolerance_one=tolerance_one,tolerance_later=tolerance_later,max_time=max_time,min_win=min_win,power_incr2=power_incr,fact_new_step_no2=fact_new_step_no,max_base_iter=max_base_iter,min_sigma2=min_sigma,alpha2=alpha,border_sigma_step2=border_sigma_step,error_version_base=error_version_base2,old_result=old_result,old_base=old_base,restart=True)
+gradient_res,gradient_allres=gradient_fit5(list_open8,list_discard8,list_value8,old_result[0:6,old_result.shape[1]-1,0],old_result[6:12,old_result.shape[1]-1,0],old_result[12:19,old_result.shape[1]-1,0],old_result[0:6,old_result.shape[1]-1,1]/fac,old_result[6:12,old_result.shape[1]-1,1]/fac,old_result[12:19,old_result.shape[1]-1,1]/fac,n_games=n_games,max_iter=max_iter,output_name=output_name,tolerance_one=tolerance_one,tolerance_later=tolerance_later,max_time=max_time,min_win=min_win,power_incr2=power_incr,fact_new_step_no2=fact_new_step_no,max_base_iter=max_base_iter,min_sigma2=min_sigma,alpha2=alpha,border_sigma_step2=border_sigma_step,error_version_base=error_version_base2,old_result=old_result,old_base=old_base,restart=True,last_it=last_it2)
 #saving output 
 np.save('gradient5_fit1b.npy',gradient_res)
 np.save('gradient5_fit1b_all.npy',gradient_allres)
