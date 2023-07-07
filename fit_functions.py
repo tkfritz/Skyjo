@@ -1324,7 +1324,7 @@ def gradient_fit5(open_vars,discard_vars,value_vars,base_open,base_discard,base_
     #first setp does for sure 
     for i in range(start_i,max_iter):
         #time to use as delyta time in check 
-        if i>start_i and restart==False:
+        if i>start_i: #was wrong before 
             hours=(time.time()-full_start_time)/3600.
             print(f"ran for {np.round(hours,3)} hours")
             win_percentage=np.mean(base_res[40,:])
