@@ -154,35 +154,40 @@ start_time=time.time()
 n_games=100
 #number of iterations
 max_iter=50
-output_name="gradient5_fit2_it"
+output_name="gradient5_fit3_it"
 #tolerance for getting worse in step (sigma) is first 
 tolerance_one=1.75
 #for stopping is
 tolerance_later=0.25
 #running time hours, only checked at that of iteration 
-max_time=14 
+max_time=7
 #minium win percent other stop conditions
 min_win=20
 #reduces step for steps which lead to negative win change 
-power_incr=1.75 #smaller since negative changes seem less likely succcesul
+power_incr=1.5 #smaller since negative changes seem less likely succcesul
 #iteration number to avoid decrease 
 max_base_iter=30
 #factor increase when not significant, now smaller 
-fact_new_step_no=1.5
+fact_new_step_no=2.5
 #range in which step size increases
-border_sigma_step=3.0 #larger because divded by sigma 
+border_sigma_step=2.0 #larger because divded by sigma 
 #minium required step szie to care 
-min_sigma=2.0 #now a little larger than 50% chnage probablity  
+min_sigma=1.9 #now a little larger than 50% chnage probablity  
 #base step size compaer to larged in step
 alpha=1.0
 fac=1.0
+error_version_base2=0
 #using first of the good models 
-gradient_res,gradient_allres=gradient_fit5(list_open8,list_discard8,list_value8,np.zeros((6)),np.zeros((6)),np.zeros((7)),fac*open_steps2,fac*discard_steps2,fac*value_steps2,n_games=n_games,max_iter=max_iter,output_name=output_name,tolerance_one=tolerance_one,tolerance_later=tolerance_later,max_time=max_time,min_win=min_win,power_incr2=power_incr,fact_new_step_no2=fact_new_step_no,max_base_iter=max_base_iter,min_sigma2=min_sigma,alpha2=alpha,border_sigma_step2=border_sigma_step)
+gradient_res,gradient_allres=gradient_fit5(list_open8,list_discard8,list_value8,np.zeros((6)),np.zeros((6)),np.zeros((7)),fac*open_steps2,fac*discard_steps2,fac*value_steps2,n_games=n_games,max_iter=max_iter,output_name=output_name,tolerance_one=tolerance_one,tolerance_later=tolerance_later,max_time=max_time,min_win=min_win,power_incr2=power_incr,fact_new_step_no2=fact_new_step_no,max_base_iter=max_base_iter,min_sigma2=min_sigma,alpha2=alpha,border_sigma_step2=border_sigma_step,change_step=True,error_version_base=error_version_base2)
 #saving output 
-np.save('gradient5_fit2.npy',gradient_res)
-np.save('gradient5_fit2_all.npy',gradient_allres)
+np.save('gradient5_fit3.npy',gradient_res)
+np.save('gradient5_fit3_all.npy',gradient_allres)
 stop_time=time.time()
 print(f"Needed {np.round(stop_time-start_time,3)} seconds") 
 #now sigma corrected and some power increase
-#5_1 is n_games=100,max_iter=50,tolerance_one=1.75,tolerance_later=0.25,max_time=5,min_win=20,power_incr=1.5, ,max_base_iter=30,fact_new_step_no=2.5,border_sigma_step=2.0,min_sigma=1.9,alpha=1.0,fac=1.0 
-
+#5_1 is n_games=100,max_iter=50,tolerance_one=1.75,tolerance_later=0.25,max_time=5,min_win=20,power_incr=1.5, ,max_base_iter=30,fact_new_step_no=2.5,border_sigma_step=2.0,min_sigma=1.9,alpha=1.0,fac=1.0, change_step=False 
+#something wrong with decrease base step when it is negative now (does not get smaller) or is that err function there? both positiove and negative 
+#now looks like not always a problem thus ignored for now the problem but still potentially one seems still worse than previous trial
+# what was error_version_base=0 at least in retsart 
+#5_2 was  n_games=100 max_iter=50 tolerance_one=1.75 tolerance_later=0.25 max_time=13 min_win=20 power_incr=1.5 
+#max_base_iter=30 fact_new_step_no=1.5 border_sigma_step=3.0 min_sigma=2.0 alpha=1.0 fac=1.0  change_step=False error_version_base=1
